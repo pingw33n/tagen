@@ -1,0 +1,9 @@
+[package]
+name = "app"
+version = "0.1.0"
+authors = ["Dmytro Lysai <d@emphased.net>"]
+edition = "2018"
+
+[dependencies]
+memmap = "0.7"
+tagen = { path = "../lib" }
