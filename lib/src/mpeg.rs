@@ -216,7 +216,6 @@ impl Mpeg {
             if pos >= pos_limit {
                 return Ok(None);
             }
-            dbg!(pos);
 
             if !id3v2_done {
                 match id3::v2::Tag::read(&mut rd, Some(file_len - pos)) {
@@ -226,7 +225,6 @@ impl Mpeg {
                     | id3::v2::ReadResult::FramesErr { err, .. }
                     => return Err(err),
                     id3::v2::ReadResult::Ok { tag, len_bytes } => {
-                        dbg!(len_bytes);
                         pos += len_bytes as u64;
                         id3v2 = Some(tag);
                         id3v2_done = true;

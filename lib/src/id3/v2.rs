@@ -42,7 +42,6 @@ impl Header {
         -> Result<(Self, u32, u32)>
     {
         let version = Version::new(2, bytes[3], bytes[4]);
-        dbg!(version);
         if version.minor < 2 || version.minor > 4 {
             return Err(invalid_data_err("bad version"));
         }

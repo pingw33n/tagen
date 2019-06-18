@@ -210,9 +210,7 @@ impl Lame {
         }
 
         let vbr_method = brd.read_u8(4).unwrap();
-        dbg!(vbr_method);
         let lowpass_filter = brd.read_u16(8).unwrap() * 100;
-        dbg!(lowpass_filter);
 
         let track_peak = brd.read_u32(32).unwrap();
         let track_peak = if track_peak == 0 {
@@ -220,7 +218,6 @@ impl Lame {
         } else {
             Some(track_peak as f64 / 2u32.pow(23) as f64)
         };
-        dbg!(track_peak);
 
         fn read_i8<T: AsRef<[u8]>>(brd: &mut BitReader<T>, bit_count: usize) -> Option<i8> {
             assert!(bit_count > 0);

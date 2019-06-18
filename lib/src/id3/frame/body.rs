@@ -120,7 +120,6 @@ pub struct Text {
 
 impl Text {
     fn decode(buf: &[u8]) -> Result<Self> {
-        dbg!(buf[0]);
         let encoding = Encoding::from_u8(buf[0])?;
         let strings = Decoder::new(encoding).decode_null_delimited(&buf[1..], )?;
         Ok(Self {

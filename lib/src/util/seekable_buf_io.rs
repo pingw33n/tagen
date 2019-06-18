@@ -19,7 +19,6 @@ enum InnerPos {
 
 impl InnerPos {
     pub fn seek(&mut self, seek: &mut impl Seek, from: SeekFrom) -> Result<u64> {
-        dbg!((&self, from));
         *self = InnerPos::Desynced(match self {
             InnerPos::AfterBuf => from,
             InnerPos::Synced(pos) => Self::combine(SeekFrom::Start(*pos), from)?,
@@ -212,7 +211,6 @@ impl<T: Read + Seek> Read for BufReader<T> {
             }
         }
 
-        dbg!(self.buf());
         let (buf, amt) = copy(self.buf(), buf);
         self.consume(amt);
 

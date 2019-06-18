@@ -147,8 +147,6 @@ impl Frame {
         assert!(!unsynched);
 
         let id = FrameId::new([buf[0], buf[1], buf[2], buf[3]]);
-        dbg!(id);
-        dbg!(&buf[4..8]);
         let len = unsynch::decode_u32(&buf[4..8])
             .ok_or_else(|| invalid_data_err("bad synchsafe len"))?;
 
@@ -172,9 +170,7 @@ impl Frame {
         rd.read_exact(&mut buf[1..])?;
 
         let id = FrameId::new_v22([buf[0], buf[1], buf[2]]);
-        dbg!(id);
         let len = BigEndian::read_u32(&[0, buf[3], buf[4], buf[5]]);
-        dbg!(len);
 
         let body = Body::read(rd, id, len)?;
 
@@ -282,9 +278,7 @@ impl Frames {
         let rd = &mut Limited::new(rd, len as u64);
         let mut r = Frames::new();
         while rd.max_available() > 0 {
-            dbg!(rd.max_available());
             if let Some(frame) = Frame::read(rd, version)? {
-                dbg!(&frame);
                 r.insert(frame);
             } else {
                 break;

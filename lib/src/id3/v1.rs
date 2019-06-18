@@ -39,9 +39,7 @@ impl Tag {
     pub fn read(mut rd: impl Read + Seek) -> Result<Option<Self>> {
         let mut data = [0; FULL_LEN];
         for &len in &[FULL_LEN, LEN] {
-            dbg!(len);
             if let Err(e) = rd.seek(SeekFrom::End(-(len as i64))) {
-                dbg!(e.kind());
                 if e.kind() == ErrorKind::InvalidInput {
                     continue;
                 }
