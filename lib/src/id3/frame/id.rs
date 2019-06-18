@@ -6,9 +6,9 @@ macro_rules! frame_id {
     };
 }
 
-macro_rules! frame_id_short {
+macro_rules! v22_frame_id {
     ($s:expr) => {
-        FrameId::new_short([$s[0], $s[1], $s[2]])
+        FrameId::new_v22([$s[0], $s[1], $s[2]])
     };
 }
 
@@ -21,12 +21,18 @@ impl FrameId {
     // Text frames.
 
     pub const BPM: Self = frame_id!(b"TBPM");
+    pub const V22_BPM: Self = v22_frame_id!(b"TBP");
     pub const ALBUM: Self = frame_id!(b"TALB");
+    pub const V22_ALBUM: Self = v22_frame_id!(b"TAL");
     pub const COMPOSER: Self = frame_id!(b"TCOM");
+    pub const V22_COMPOSER: Self = v22_frame_id!(b"TCM");
     pub const CONTENT_TYPE: Self = frame_id!(b"TCON");
+    pub const V22_CONTENT_TYPE: Self = v22_frame_id!(b"TCO");
     pub const COPYRIGHT: Self = frame_id!(b"TCOP");
+    pub const V22_COPYRIGHT: Self = v22_frame_id!(b"TCR");
     pub const ENCODED_TS: Self = frame_id!(b"TDEN");
     pub const DELAY: Self = frame_id!(b"TDLY");
+    pub const V22_DELAY: Self = v22_frame_id!(b"TDY");
     pub const ORIGINAL_RELEASE_TS: Self = frame_id!(b"TDOR");
 
     /// `TDRC`. While it is called "recording timestamp" in the RFC, de-facto it's used as release
@@ -36,51 +42,141 @@ impl FrameId {
     pub const RELEASE_TS_RFC: Self = frame_id!(b"TDRL");
     pub const TAGGING_TS: Self = frame_id!(b"TDRL");
     pub const ENCODED_BY: Self = frame_id!(b"TENC");
+    pub const V22_ENCODED_BY: Self = v22_frame_id!(b"TEN");
     pub const LYRICIST: Self = frame_id!(b"TEXT");
+    pub const V22_LYRICIST: Self = v22_frame_id!(b"TXT");
     pub const FILE_TYPE: Self = frame_id!(b"TFLT");
+    pub const V22_FILE_TYPE: Self = v22_frame_id!(b"TFT");
     pub const GROUP_TITLE: Self = frame_id!(b"TIT1");
+    pub const V22_GROUP_TITLE: Self = v22_frame_id!(b"TT1");
     pub const TITLE: Self = frame_id!(b"TIT2");
+    pub const V22_TITLE: Self = v22_frame_id!(b"TT2");
     pub const SUBTITLE: Self = frame_id!(b"TIT3");
+    pub const V22_SUBTITLE: Self = v22_frame_id!(b"TT3");
     pub const PEOPLE: Self = frame_id!(b"TIPL");
+    pub const V22_PEOPLE: Self = v22_frame_id!(b"IPL");
     pub const INITIAL_KEY: Self = frame_id!(b"TKEY");
+    pub const V22_INITIAL_KEY: Self = v22_frame_id!(b"TKE");
     pub const LANGUAGE: Self = frame_id!(b"TLAN");
+    pub const V22_LANGUAGE: Self = v22_frame_id!(b"TLA");
     pub const LENGTH: Self = frame_id!(b"TLEN");
+    pub const V22_LENGTH: Self = v22_frame_id!(b"TLE");
     pub const PERFORMERS: Self = frame_id!(b"TMCL");
     pub const MEDIA_TYPE: Self = frame_id!(b"TMED");
+    pub const V22_MEDIA_TYPE: Self = v22_frame_id!(b"TMT");
     pub const MOOD: Self = frame_id!(b"TMOO");
     pub const ORIGINAL_ALBUM: Self = frame_id!(b"TOAL");
+    pub const V22_ORIGINAL_ALBUM: Self = v22_frame_id!(b"TOT");
     pub const ORIGINAL_FILENAME: Self = frame_id!(b"TOFN");
+    pub const V22_ORIGINAL_FILENAME: Self = v22_frame_id!(b"TOF");
     pub const ORIGINAL_LYRICIST: Self = frame_id!(b"TOLY");
+    pub const V22_ORIGINAL_LYRICIST: Self = v22_frame_id!(b"TOL");
     pub const ORIGINAL_ARTIST: Self = frame_id!(b"TOPE");
+    pub const V22_ORIGINAL_ARTIST: Self = v22_frame_id!(b"TOA");
     /// v2.3
     pub const ORIGINAL_RELEASE_YEAR: Self = frame_id!(b"TORY");
     pub const OWNER: Self = frame_id!(b"TOWN");
     pub const ARTIST: Self = frame_id!(b"TPE1");
+    pub const V22_ARTIST: Self = v22_frame_id!(b"TP1");
     pub const ALBUM_ARTIST: Self = frame_id!(b"TPE2");
+    pub const V22_ALBUM_ARTIST: Self = v22_frame_id!(b"TP2");
     pub const CONDUCTOR: Self = frame_id!(b"TPE3");
+    pub const V22_CONDUCTOR: Self = v22_frame_id!(b"TP3");
+    pub const REMIXER: Self = frame_id!(b"TPE4");
+    pub const V22_REMIXER: Self = v22_frame_id!(b"TP4");
     pub const DISC: Self = frame_id!(b"TPOS");
+    pub const V22_DISC: Self = v22_frame_id!(b"TPA");
     pub const PRODUCED_NOTICE: Self = frame_id!(b"TPRO");
     pub const PUBLISHER: Self = frame_id!(b"TPUB");
+    pub const V22_PUBLISHER: Self = v22_frame_id!(b"TPB");
     pub const RADIO_STATION: Self = frame_id!(b"TRSN");
     pub const RADIO_STATION_NAME: Self = frame_id!(b"TRSO");
     pub const ISRC: Self = frame_id!(b"TSRC");
+    pub const V22_ISRC: Self = v22_frame_id!(b"TRC");
     pub const DISC_SUBTITLE: Self = frame_id!(b"TSST");
     pub const TRACK: Self = frame_id!(b"TRCK");
+    pub const V22_TRACK: Self = v22_frame_id!(b"TRK");
     pub const ALBUM_SORT_ORDER: Self = frame_id!(b"TSOA");
     pub const ARTIST_SORT_ORDER: Self = frame_id!(b"TSOP");
     pub const TITLE_SORT_ORDER: Self = frame_id!(b"TSOT");
     pub const ENCODER_SETTINGS: Self = frame_id!(b"TSSE");
+    pub const V22_ENCODER_SETTINGS: Self = v22_frame_id!(b"TSS");
     pub const USER_TEXT: Self = frame_id!(b"TXXX");
+    pub const V22_USER_TEXT: Self = v22_frame_id!(b"TXX");
+
+    pub const V22_DATE: Self = v22_frame_id!(b"TDA");
+    pub const V22_TIME: Self = v22_frame_id!(b"TIM");
+    pub const V22_RECORDING_DATES: Self = v22_frame_id!(b"TRD");
+    pub const V22_SIZE: Self = v22_frame_id!(b"TSI");
+    pub const V22_YEAR: Self = v22_frame_id!(b"TYE");
 
     // URL frames.
 
-    pub const USER_WEB_LINK: Self = frame_id!(b"WXXX");
+    pub const COMMERCIAL_URL: Self = frame_id!(b"WCOM");
+    pub const V22_COMMERCIAL_URL: Self = v22_frame_id!(b"WCM");
+    pub const COPYRIGHT_URL: Self = frame_id!(b"WCOP");
+    pub const V22_COPYRIGHT_URL: Self = v22_frame_id!(b"WCP");
+    pub const AUDIO_FILE_URL: Self = frame_id!(b"WOAF");
+    pub const V22_AUDIO_FILE_URL: Self = v22_frame_id!(b"WAF");
+    pub const ARTIST_URL: Self = frame_id!(b"WOAR");
+    pub const V22_ARTIST_URL: Self = v22_frame_id!(b"WAR");
+    pub const AUDIO_SOURCE_URL: Self = frame_id!(b"WOAS");
+    pub const V22_AUDIO_SOURCE_URL: Self = v22_frame_id!(b"WAS");
+    pub const INTERNET_RADIO_URL: Self = frame_id!(b"WORS");
+    pub const PAYMENT_URL: Self = frame_id!(b"WPAY");
+    pub const PUBLISHER_URL: Self = frame_id!(b"WPUB");
+    pub const V22_PUBLISHER_URL: Self = v22_frame_id!(b"WPB");
+    pub const USER_URL: Self = frame_id!(b"WXXX");
+    pub const V22_USER_URL: Self = v22_frame_id!(b"WXXX");
 
     // Misc frames.
 
+    pub const AUDIO_ENCRYPTION: Self = frame_id!(b"AENC");
+    pub const V22_AUDIO_ENCRYPTION: Self = v22_frame_id!(b"CRA");
+    pub const ECRYPTED_META: Self = v22_frame_id!(b"CRM");
+    pub const ATTACHED_PICTURE: Self = frame_id!(b"APIC");
+    pub const V22_ATTACHED_PICTURE: Self = v22_frame_id!(b"PIC");
+    pub const AUDIO_SEEK_POINT_INDEX: Self = frame_id!(b"ASPI");
     pub const CHAPTER: Self = frame_id!(b"CHAP");
     pub const COMMENT: Self = frame_id!(b"COMM");
-    pub const COMMENT_SHORT: Self = frame_id_short!(b"COM");
+    pub const V22_COMMENT: Self = v22_frame_id!(b"COM");
+    pub const COMMERCIAL: Self = frame_id!(b"COMR");
+    pub const ENCRYPTION: Self = frame_id!(b"ENCR");
+    pub const V22_EQUALIZATION: Self = v22_frame_id!(b"EQU");
+    pub const EQUALIZATION2: Self = frame_id!(b"EQU2");
+    pub const EVENT_TIMING_CODES: Self = frame_id!(b"ETCO");
+    pub const V22_EVENT_TIMING_CODES: Self = v22_frame_id!(b"ETC");
+    pub const GENERAL_ENCAP_OBJECT: Self = frame_id!(b"GEOB");
+    pub const V22_GENERAL_ENCAP_OBJECT: Self = v22_frame_id!(b"GEO");
+    pub const GROUP_ID: Self = frame_id!(b"GRID");
+    pub const LINK: Self = frame_id!(b"LINK");
+    pub const V22_LINK: Self = v22_frame_id!(b"LNK");
+    pub const MUSIC_CD_ID: Self = frame_id!(b"MCDI");
+    pub const V22_MUSIC_CD_ID: Self = v22_frame_id!(b"MCI");
+    pub const MPEG_LOCATION_LUT: Self = frame_id!(b"MLLT");
+    pub const V22_MPEG_LOCATION_LUT: Self = v22_frame_id!(b"MLL");
+    pub const OWNERSHIP: Self = frame_id!(b"OWNE");
+    pub const PRIVATE: Self = frame_id!(b"PRIV");
+    pub const PLAY_COUNTER: Self = frame_id!(b"PCNT");
+    pub const POPULARIMETER: Self = frame_id!(b"POPM");
+    pub const V22_POPULARIMETER: Self = v22_frame_id!(b"POP");
+    pub const POS_SYNC: Self = frame_id!(b"POSS");
+    pub const RECOMMENDED_BUF: Self = frame_id!(b"RBUF");
+    pub const V22_RELATIVE_VOL_ADJUST: Self = v22_frame_id!(b"RVA");
+    pub const RELATIVE_VOL_ADJUST2: Self = frame_id!(b"RVA2");
+    pub const REVERB: Self = frame_id!(b"RVRB");
+    pub const V22_REVERB: Self = v22_frame_id!(b"REV");
+    pub const SEEK: Self = frame_id!(b"SEEK");
+    pub const SIGNATURE: Self = frame_id!(b"SIGN");
+    pub const SYNC_LYRICS: Self = frame_id!(b"SYLT");
+    pub const V22_SYNC_LYRICS: Self = v22_frame_id!(b"SLT");
+    pub const SYNC_TEMPO_CODES: Self = frame_id!(b"SYTC");
+    pub const V22_SYNC_TEMPO_CODES: Self = v22_frame_id!(b"STC");
+    pub const UNIQUE_FILE_ID: Self = frame_id!(b"UFID");
+    pub const V22_UNIQUE_FILE_ID: Self = v22_frame_id!(b"UFI");
+    pub const TERMS_OF_USE: Self = frame_id!(b"USER");
+    pub const UNSYNC_LYRICS: Self = frame_id!(b"USLT");
+    pub const V22_UNSYNC_LYRICS: Self = v22_frame_id!(b"ULT");
 
     pub const fn new(v: [u8; 4]) -> Self {
         Self((v[0] as u32) << 24 |
@@ -89,7 +185,7 @@ impl FrameId {
             (v[3] as u32) << 0)
     }
 
-    pub const fn new_short(v: [u8; 3]) -> Self {
+    pub const fn new_v22(v: [u8; 3]) -> Self {
         Self::new([v[0], v[1], v[2], 0])
     }
 
@@ -102,7 +198,7 @@ impl FrameId {
         ]
     }
 
-    pub fn is_short(&self) -> bool {
+    pub fn is_v22(&self) -> bool {
         self.0 & 0xff == 0
     }
 
@@ -114,12 +210,12 @@ impl FrameId {
         self.is_prefixed(b'T') && *self != Self::USER_TEXT
     }
 
-    pub fn web_link(sub_id: [u8; 3]) -> Self {
+    pub fn url(sub_id: [u8; 3]) -> Self {
         Self::prefixed(b'W', sub_id)
     }
 
-    pub fn is_web_link(&self) -> bool {
-        self.is_prefixed(b'W') && *self != Self::USER_WEB_LINK
+    pub fn is_url(&self) -> bool {
+        self.is_prefixed(b'W') && *self != Self::USER_URL
     }
 
     fn prefixed(prefix: u8, sub_id: [u8; 3]) -> Self {
@@ -139,7 +235,7 @@ impl Into<[u8; 4]> for FrameId {
 
 impl fmt::Debug for FrameId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let len = if self.is_short() { 3 } else { 4 };
+        let len = if self.is_v22() { 3 } else { 4 };
         let bytes = self.to_bytes();
         write!(f, "FrameId(")?;
         for &c in &bytes[..len] {

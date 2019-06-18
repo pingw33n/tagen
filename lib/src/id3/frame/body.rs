@@ -11,9 +11,9 @@ pub enum BodyKind {
     Int,
     Text,
     UniqueFileId,
+    Url,
     UserText,
-    UserWebLink,
-    WebLink,
+    UserUrl,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -22,9 +22,9 @@ pub enum Body {
     Comment(Comment),
     Text(Text),
     UniqueFileId(UniqueFileId),
+    Url(String),
     UserText(UserText),
-    UserWebLink(UserWebLink),
-    WebLink(String),
+    UserUrl(UserUrl),
 }
 
 impl Body {
@@ -35,9 +35,9 @@ impl Body {
             Comment(_) => BodyKind::Comment,
             Text(_) => BodyKind::Text,
             UniqueFileId(_) => BodyKind::UniqueFileId,
+            Url(_) => BodyKind::Url,
             UserText(_) => BodyKind::UserText,
-            UserWebLink(_) => BodyKind::UserWebLink,
-            WebLink(_) => BodyKind::WebLink,
+            UserUrl(_) => BodyKind::UserUrl,
         }
     }
 
@@ -67,12 +67,12 @@ impl Body {
                 v.encoding = v.encoding.common(o.encoding);
                 v.values.extend(o.values);
             },
-            UserWebLink(v) => {
-                let o = o.into_user_web_link().unwrap();
+            UserUrl(v) => {
+                let o = o.into_user_url().unwrap();
                 debug_assert_eq!(v.descr, o.descr);
                 *v = o;
             }
-            WebLink(v) => *v = o.into_web_link().unwrap(),
+            Url(v) => *v = o.into_url().unwrap(),
         }
     }
 
@@ -86,16 +86,16 @@ impl Body {
             return Err(unexpected_eof_err());
         }
         match frame_id {
-            FrameId::COMMENT | FrameId::COMMENT_SHORT => Comment::decode(&buf).map(Body::Comment),
+            FrameId::COMMENT | FrameId::V22_COMMENT => Comment::decode(&buf).map(Body::Comment),
             FrameId::USER_TEXT => UserText::decode(&buf).map(Body::UserText),
-            FrameId::USER_WEB_LINK => UserWebLink::decode(&buf).map(Body::UserWebLink),
+            FrameId::USER_URL => UserUrl::decode(&buf).map(Body::UserUrl),
             _ if frame_id.is_text() => Text::decode(&buf).map(Body::Text),
-            _ if frame_id.is_web_link() => Self::decode_web_link(&buf).map(Body::WebLink),
+            _ if frame_id.is_url() => Self::decode_url(&buf).map(Body::Url),
             _ => Ok(Body::Bytes(buf)),
         }
     }
 
-    fn decode_web_link(buf: &[u8]) -> Result<String> {
+    fn decode_url(buf: &[u8]) -> Result<String> {
         let url =  Decoder::new(Encoding::Latin1).decode_maybe_null_terminated(buf)?;
         Ok(url)
     }
@@ -108,8 +108,8 @@ Body:
     into_text, as_text, as_text_mut <= Text ( Text ),
     into_unique_file_id, as_unqiue_file_id, as_sunqiue_file_id_mut <= UniqueFileId ( UniqueFileId ),
     into_user_text, as_user_text, as_user_text_mut <= UserText ( UserText ),
-    into_user_web_link, as_user_web_link, as_user_web_link_mut <= UserWebLink ( UserWebLink ),
-    into_web_link, as_web_link, as_web_link_mut <= WebLink ( String ),
+    into_user_url, as_user_url, as_user_url_mut <= UserUrl ( UserUrl ),
+    into_url, as_url, as_url_mut <= Url ( String ),
 );
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -186,13 +186,13 @@ impl Comment {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct UserWebLink {
+pub struct UserUrl {
     pub encoding: Encoding,
     pub descr: String,
     pub url: String,
 }
 
-impl UserWebLink {
+impl UserUrl {
     fn decode(buf: &[u8]) -> Result<Self> {
         let encoding = Encoding::from_u8(buf[0])?;
         let decoder = Decoder::new(encoding);

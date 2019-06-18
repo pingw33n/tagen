@@ -126,15 +126,15 @@ impl Tag {
     }
 
     pub fn album(&self) -> Option<&str> {
-        self.frames.first_text_str(FrameId::ALBUM)
+        self.frames.first_text_str(self.fid(FrameId::ALBUM, FrameId::V22_ALBUM))
     }
 
     pub fn artist(&self) -> Option<&str> {
-        self.frames.first_text_str(FrameId::ARTIST)
+        self.frames.first_text_str(self.fid(FrameId::ARTIST, FrameId::V22_ARTIST))
     }
 
     pub fn title(&self) -> Option<&str> {
-        self.frames.first_text_str(FrameId::TITLE)
+        self.frames.first_text_str(self.fid(FrameId::TITLE, FrameId::V22_TITLE))
     }
 
     pub(crate) fn read(rd: &mut impl Read, limit: Option<u64>) -> ReadResult {
@@ -195,6 +195,14 @@ impl Tag {
                 frames,
             },
             len_bytes: tag_len,
+        }
+    }
+
+    fn fid(&self, post_v2_3: FrameId, pre_v2_3: FrameId) -> FrameId {
+        if self.header.version.minor >= 3 {
+            post_v2_3
+        } else {
+            pre_v2_3
         }
     }
 }

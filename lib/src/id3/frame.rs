@@ -171,7 +171,7 @@ impl Frame {
 
         rd.read_exact(&mut buf[1..])?;
 
-        let id = FrameId::new_short([buf[0], buf[1], buf[2]]);
+        let id = FrameId::new_v22([buf[0], buf[1], buf[2]]);
         dbg!(id);
         let len = BigEndian::read_u32(&[0, buf[3], buf[4], buf[5]]);
         dbg!(len);
@@ -200,8 +200,8 @@ impl PartialEq for FrameKey {
                     v.descr == o.descr && v.lang == o.lang
                 }
                 UserText(v) => v.descr == ob.as_user_text().unwrap().descr,
-                UserWebLink(v) => v.descr == ob.as_user_web_link().unwrap().descr,
-                WebLink(v) => v == ob.as_web_link().unwrap(),
+                UserUrl(v) => v.descr == ob.as_user_url().unwrap().descr,
+                Url(v) => v == ob.as_url().unwrap(),
                 | Bytes(_)
                 | Text(_)
                 | UniqueFileId(_)
@@ -223,8 +223,8 @@ impl Hash for FrameKey {
                 state.write(&v.lang.to_bytes());
             }
             UserText(v) => state.write(v.descr.as_bytes()),
-            UserWebLink(v) => state.write(v.descr.as_bytes()),
-            WebLink(v) => state.write(v.as_bytes()),
+            UserUrl(v) => state.write(v.descr.as_bytes()),
+            Url(v) => state.write(v.as_bytes()),
             | Bytes(_)
             | Text(_)
             | UniqueFileId(_)
