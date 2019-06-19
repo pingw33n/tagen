@@ -15,7 +15,7 @@ pub struct Tag {
     pub year: String,
     pub comment: String,
     pub track: Option<u8>,
-    pub genre: u8,
+    pub genre: Option<u8>,
     pub ext: Option<ExtTag>,
 }
 
@@ -36,7 +36,7 @@ impl Tag {
         (if self.ext.is_some() { FULL_LEN } else { LEN }) as u32
     }
 
-    pub fn read(mut rd: impl Read + Seek) -> Result<Option<Self>> {
+    pub(crate) fn read(mut rd: impl Read + Seek) -> Result<Option<Self>> {
         let mut data = [0; FULL_LEN];
         for &len in &[FULL_LEN, LEN] {
             if let Err(e) = rd.seek(SeekFrom::End(-(len as i64))) {
@@ -96,7 +96,11 @@ impl Tag {
             (&buf[97..127], None)
         };
         let comment = decode_str(comment_bytes);
-        let genre = buf[127];
+        let genre = if buf[127] != 255 {
+            Some(buf[127])
+        } else {
+            None
+        };
 
         Self {
             title,
