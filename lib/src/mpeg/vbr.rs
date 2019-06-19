@@ -40,11 +40,11 @@ impl Vbr {
     pub(crate) fn offset(header: &Header) -> u64 {
         match header.version {
             Version::V1 => match header.channel_mode {
-                ChannelMode::SingleChannel => 21,
+                ChannelMode::Mono => 21,
                 _ => 36,
             }
             _ => match header.channel_mode {
-                ChannelMode::SingleChannel => 13,
+                ChannelMode::Mono => 13,
                 _ => 21,
             }
         }

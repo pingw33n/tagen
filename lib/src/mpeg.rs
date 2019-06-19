@@ -20,6 +20,17 @@ pub enum Version {
     V2_5,
 }
 
+impl fmt::Display for Version {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Version::*;
+        write!(f, "{}", match self {
+            V1 => "1",
+            V2 => "2",
+            V2_5 => "2.5",
+        })
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Layer {
     L1,
@@ -27,12 +38,35 @@ pub enum Layer {
     L3,
 }
 
+impl fmt::Display for Layer {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Layer::*;
+        write!(f, "{}", match self {
+            L1 => "I",
+            L2 => "II",
+            L3 => "III",
+        })
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ChannelMode {
     Stereo,
     JointStereo,
     DualChannel,
-    SingleChannel,
+    Mono,
+}
+
+impl fmt::Display for ChannelMode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use ChannelMode::*;
+        write!(f, "{}", match self {
+            Stereo => "Stereo",
+            JointStereo => "Joint Stereo",
+            DualChannel => "Dual Channel",
+            Mono => "Mono",
+        })
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -140,7 +174,7 @@ impl Header {
             0b00 => ChannelMode::Stereo,
             0b01 => ChannelMode::JointStereo,
             0b10 => ChannelMode::DualChannel,
-            0b11 => ChannelMode::SingleChannel,
+            0b11 => ChannelMode::Mono,
             _ => unreachable!(),
         };
         let copyrighted = hdr_bytes.get_bit(3);
