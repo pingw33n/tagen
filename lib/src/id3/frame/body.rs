@@ -8,7 +8,6 @@ use super::super::string::Decoder;
 pub enum BodyKind {
     Bytes,
     Comment,
-    Int,
     Text,
     UniqueFileId,
     Url,
