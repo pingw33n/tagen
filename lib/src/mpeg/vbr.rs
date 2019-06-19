@@ -140,9 +140,8 @@ impl LameVersion {
     }
 }
 
-impl fmt::Debug for LameVersion {
+impl fmt::Display for LameVersion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "LameVersion(")?;
         for &c in &self.0 {
             if c == 0 {
                 break;
@@ -153,7 +152,13 @@ impl fmt::Debug for LameVersion {
                 write!(f, "?")?;
             }
         }
-        write!(f, ")")
+        Ok(())
+    }
+}
+
+impl fmt::Debug for LameVersion {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "LameVersion({})", self)
     }
 }
 

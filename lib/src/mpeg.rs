@@ -57,6 +57,16 @@ pub enum ChannelMode {
     Mono,
 }
 
+impl ChannelMode {
+    pub fn count(&self) -> u32 {
+        if *self == ChannelMode::Mono {
+            1
+        } else {
+            2
+        }
+    }
+}
+
 impl fmt::Display for ChannelMode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use ChannelMode::*;
@@ -74,6 +84,17 @@ pub enum Emphasis {
     None,
     E50_15,
     CcitJ17,
+}
+
+impl fmt::Display for Emphasis {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use Emphasis::*;
+        write!(f, "{}", match self {
+            None => "None",
+            E50_15 => "50/15 ms",
+            CcitJ17 => "CCIT J.17",
+        })
+    }
 }
 
 enum ReadResult<T> {
