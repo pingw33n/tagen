@@ -23,18 +23,21 @@ impl FrameId {
     pub const BPM: Self = frame_id!(b"TBPM");
     pub const ALBUM: Self = frame_id!(b"TALB");
     pub const COMPOSER: Self = frame_id!(b"TCOM");
-    pub const CONTENT_TYPE: Self = frame_id!(b"TCON");
+    pub const GENRE: Self = frame_id!(b"TCON");
     pub const COPYRIGHT: Self = frame_id!(b"TCOP");
-    pub const ENCODED_TS: Self = frame_id!(b"TDEN");
+    pub const ENCODING_DATE: Self = frame_id!(b"TDEN");
     pub const DELAY: Self = frame_id!(b"TDLY");
-    pub const ORIGINAL_RELEASE_TS: Self = frame_id!(b"TDOR");
+    pub const ORIGINAL_RELEASE_DATE: Self = frame_id!(b"TDOR");
 
-    /// `TDRC`. While it is called "recording timestamp" in the RFC, de-facto it's used as release
-    /// timestamp everywhere.
-    pub const RELEASE_TS: Self = frame_id!(b"TDRC");
+    /// `TDRC`. While it is called "recording timestamp" in the RFC, de facto it's used as release
+    /// timestamp everywhere. See also `RFC_RELEASE_DATE`.
+    pub const RELEASE_DATE: Self = frame_id!(b"TDRC");
 
-    pub const RELEASE_TS_RFC: Self = frame_id!(b"TDRL");
-    pub const TAGGING_TS: Self = frame_id!(b"TDRL");
+    /// `TDRL`. De jure release timestamp which doesn't seem to be used in the wild,
+    /// `RELEASE_DATE` is used instead.
+    pub const RFC_RELEASE_DATE: Self = frame_id!(b"TDRL");
+
+    pub const TAGGING_DATE: Self = frame_id!(b"TDRL");
     pub const ENCODED_BY: Self = frame_id!(b"TENC");
     pub const LYRICIST: Self = frame_id!(b"TEXT");
     pub const FILE_TYPE: Self = frame_id!(b"TFLT");
@@ -70,7 +73,6 @@ impl FrameId {
     pub const TITLE_SORT_ORDER: Self = frame_id!(b"TSOT");
     pub const ENCODER_SETTINGS: Self = frame_id!(b"TSSE");
     pub const USER_TEXT: Self = frame_id!(b"TXXX");
-
 
     // URL frames.
 
@@ -122,7 +124,7 @@ impl FrameId {
     pub const V22_ALBUM: Self = v22_frame_id!(b"TAL");
     pub const V22_BPM: Self = v22_frame_id!(b"TBP");
     pub const V22_COMPOSER: Self = v22_frame_id!(b"TCM");
-    pub const V22_CONTENT_TYPE: Self = v22_frame_id!(b"TCO");
+    pub const V22_GENRE: Self = v22_frame_id!(b"TCO");
     pub const V22_COPYRIGHT: Self = v22_frame_id!(b"TCR");
     pub const V22_DELAY: Self = v22_frame_id!(b"TDY");
     pub const V22_ENCODED_BY: Self = v22_frame_id!(b"TEN");
