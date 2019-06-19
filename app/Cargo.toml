@@ -1,8 +1,12 @@
 [package]
-name = "app"
+name = "tagen-app"
 version = "0.1.0"
 authors = ["Dmytro Lysai <d@emphased.net>"]
 edition = "2018"
+
+[[bin]]
+name = "tg"
+path = "src/main.rs"
 
 [dependencies]
 clap = "2.33"
