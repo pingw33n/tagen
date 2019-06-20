@@ -1,7 +1,8 @@
 use std::io::prelude::*;
-use std::io::{ErrorKind, Result, SeekFrom};
+use std::io::{self, ErrorKind, SeekFrom};
 
 use super::string::*;
+use crate::error::*;
 
 const LEN: usize = 128;
 const EXT_LEN: usize = 227;
@@ -235,9 +236,11 @@ impl Tag {
         (if self.ext.is_some() { FULL_LEN } else { LEN }) as u32
     }
 
-    pub(crate) fn read(mut rd: impl Read + Seek) -> Result<Option<Self>> {
+    pub(crate) fn read(mut rd: impl Read + Seek) -> io::Result<Self> {
         let mut data = [0; FULL_LEN];
         for &len in &[FULL_LEN, LEN] {
+            let last_attempt = len == LEN;
+
             if let Err(e) = rd.seek(SeekFrom::End(-(len as i64))) {
                 if e.kind() == ErrorKind::InvalidInput {
                     continue;
@@ -246,28 +249,30 @@ impl Tag {
             }
             let data = &mut data[..len];
             if let Err(e) = rd.read_exact(data) {
-                if e.kind() == ErrorKind::UnexpectedEof {
+                if e.kind() == ErrorKind::UnexpectedEof && !last_attempt {
                     continue;
                 } else {
                     return Err(e);
                 }
             }
-            let r = Self::decode(&data);
-            if r.is_some() {
-                return Ok(r);
+            match Self::decode(&data) {
+                Ok(v) => return Ok(v),
+                Err(e) => if last_attempt {
+                    return Err(e.into_invalid_data_err())
+                }
             }
         }
-        Ok(None)
+        unreachable!()
     }
 
-    fn decode(buf: &[u8]) -> Option<Self> {
+    fn decode(buf: &[u8]) -> Result<Self> {
         if buf.len() < LEN || &buf[..3] != b"TAG" {
-            return None;
+            return Err(Error("couldn't find ID3v1 magic"));
         }
 
         let ext = if buf[4] == b'+' {
             if buf.len() < LEN + EXT_LEN || &buf[EXT_LEN..EXT_LEN + 3] != b"TAG" {
-                return None;
+                return Err(Error("couldn't find ID3v1 magic"));
             }
             Some(ExtTag::decode(buf))
         } else {
@@ -280,7 +285,7 @@ impl Tag {
             buf
         };
 
-        Some(Self::decode0(buf, ext))
+        Ok(Self::decode0(buf, ext))
     }
 
     fn decode0(buf: &[u8], ext: Option<ExtTag>) -> Self {

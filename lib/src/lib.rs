@@ -6,6 +6,7 @@
 #[macro_use]
 mod macros;
 
+pub mod error;
 pub mod id3;
 pub mod mpeg;
 mod util;

@@ -6,11 +6,12 @@ use if_chain::if_chain;
 use std::cmp;
 use std::fmt;
 use std::io::prelude::*;
-use std::io::{ErrorKind, Result, SeekFrom};
+use std::io::{self, SeekFrom};
 use std::time::Duration;
 
+use crate::error::*;
+use crate::util::*;
 use super::id3;
-use crate::util::bit_stream::BitReader;
 pub use vbr::*;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -120,30 +121,23 @@ pub struct Header {
 }
 
 impl Header {
-    fn read(mut rd: impl Read) -> Result<ReadResult<Self>> {
-        let hdr_bytes = match rd.read_u32::<BigEndian>() {
-            Ok(v) => v,
-            Err(e) => return if e.kind() == ErrorKind::UnexpectedEof {
-                Ok(ReadResult::TryForward)
-            } else {
-                Err(e)
-            }
-        };
+    fn read(mut rd: impl Read) -> io::Result<Self> {
+        let hdr_bytes = rd.read_u32::<BigEndian>()?;
 
         // Frame sync (all bits set).
         if hdr_bytes.get_bits(21..32) != 0b111_1111_1111 {
-            return Ok(ReadResult::TryForward);
+            return Err(Error("bad frame sync").into_invalid_data_err());
         }
 
         let version = match hdr_bytes.get_bits(19..21) {
             0b00 => Version::V2_5,
-            0b01 => return Ok(ReadResult::TryForward),
+            0b01 => return Err(Error("bad version").into_invalid_data_err()),
             0b10 => Version::V2,
             0b11 => Version::V1,
             _ => unreachable!(),
         };
         let layer = match hdr_bytes.get_bits(17..19) {
-            0b00 => return Ok(ReadResult::TryForward),
+            0b00 => return Err(Error("bad layer").into_invalid_data_err()),
             0b01 => Layer::L3,
             0b10 => Layer::L2,
             0b11 => Layer::L1,
@@ -165,7 +159,7 @@ impl Header {
         let bitrate =
             hdr_bytes.get_bits(12..16) as usize;
         let kbits_per_sec = match version {
-            _ if bitrate == 0b1111 => return Ok(ReadResult::TryForward),
+            _ if bitrate == 0b1111 => return Err(Error("bad bitrate").into_invalid_data_err()),
             Version::V1 => match layer {
                 Layer::L1 => BIRATE_V1_L1[bitrate],
                 Layer::L2 => BIRATE_V1_L2[bitrate],
@@ -184,7 +178,7 @@ impl Header {
         ];
         let sample_rate = hdr_bytes.get_bits(10..12) as usize;
         if sample_rate == 0b11 {
-            return Ok(ReadResult::TryForward);
+            return Err(Error("bad sample rate").into_invalid_data_err());
         }
         let samples_per_sec = SAMPLE_RATE[sample_rate][version as usize];
 
@@ -203,12 +197,12 @@ impl Header {
         let emphasis = match hdr_bytes.get_bits(0..2) {
             0b00 => Emphasis::None,
             0b01 => Emphasis::E50_15,
-            0b10 => return Ok(ReadResult::TryForward),
+            0b10 => return Err(Error("bad emphasis").into_invalid_data_err()),
             0b11 => Emphasis::CcitJ17,
             _ => unreachable!(),
         };
 
-        Ok(ReadResult::Some(Self {
+        Ok(Self {
             version,
             layer,
             crc_protected,
@@ -219,7 +213,7 @@ impl Header {
             copyrighted,
             original,
             emphasis,
-        }))
+        })
     }
 
     pub fn samples_per_frame(&self) -> u32 {
@@ -260,7 +254,7 @@ pub struct Mpeg {
 }
 
 impl Mpeg {
-    pub fn read(mut rd: impl Read + Seek) -> Result<Option<Self>> {
+    pub fn read(mut rd: impl Read + Seek) -> io::Result<Self> {
         let file_len = rd.seek(SeekFrom::End(0))? as u64;
         rd.seek(SeekFrom::Start(0))?;
         let mut id3v2_done = false;
@@ -269,30 +263,31 @@ impl Mpeg {
         let pos_limit = cmp::min(file_len, 1024 * 1024);
         let (header, header_pos) = loop {
             if pos >= pos_limit {
-                return Ok(None);
+                return Err(Error("couldn't find first MPEG frame").into_invalid_data_err());
             }
 
             if !id3v2_done {
                 match id3::v2::Tag::read(&mut rd, Some(file_len - pos)) {
-                    id3::v2::ReadResult::NoTag(id3::v2::NoTag::Done) => id3v2_done = true,
-                    id3::v2::ReadResult::NoTag(id3::v2::NoTag::TryForward) => {},
-                    | id3::v2::ReadResult::HeaderErr(err)
-                    | id3::v2::ReadResult::FramesErr { err, .. }
-                    => return Err(err),
-                    id3::v2::ReadResult::Ok { tag, len_bytes } => {
-                        pos += len_bytes as u64;
+                    Ok((tag, tag_len_bytes)) => {
+                        pos += tag_len_bytes as u64;
                         id3v2 = Some(tag);
                         id3v2_done = true;
                         continue;
+                    }
+                    Err(e) => match e.kind() {
+                        io::ErrorKind::UnexpectedEof => id3v2_done = true,
+                        io::ErrorKind::InvalidData => {}
+                        _ => return Err(e),
                     }
                 }
             }
 
             rd.seek(SeekFrom::Start(pos))?;
-            match Header::read(&mut rd)? {
-                ReadResult::Done => return Ok(None),
-                ReadResult::TryForward => {}
-                ReadResult::Some(h) => break (h, pos),
+            match Header::read(&mut rd) {
+                Ok(h) => break (h, pos),
+                Err(e) => if e.kind() != io::ErrorKind::InvalidData {
+                    return Err(e);
+                }
             }
 
             pos += 1;
@@ -300,12 +295,12 @@ impl Mpeg {
         };
 
 
-        let id3v1 = id3::v1::Tag::read(&mut rd)?;
+        let id3v1 = id3::v1::Tag::read(&mut rd).into_opt()?;
 
         let vbr = if header.layer == Layer::L3 {
             let pos = header_pos + Vbr::offset(&header);
             rd.seek(SeekFrom::Start(pos))?;
-            Vbr::read(&mut rd)?
+            Vbr::read(&mut rd).into_opt()?
         } else {
             None
         };
@@ -313,14 +308,14 @@ impl Mpeg {
         let (duration, bits_per_sec) = Self::compute_duration_and_bitrate(
             &header, header_pos, file_len, vbr.as_ref(), id3v1.as_ref());
 
-        Ok(Some(Self {
+        Ok(Self {
             header,
             vbr,
             id3v1,
             id3v2,
             duration,
             bits_per_sec,
-        }))
+        })
     }
 
     pub fn header(&self) -> &Header {

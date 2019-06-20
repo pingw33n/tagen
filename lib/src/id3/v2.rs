@@ -1,8 +1,9 @@
 use bit_field::BitField;
 use byteorder::{ReadBytesExt, BigEndian};
 use std::io::prelude::*;
-use std::io::{Error, ErrorKind, Result};
+use std::io;
 
+use crate::error::*;
 use crate::util::*;
 use super::{Timestamp, Version};
 use super::frame::{FrameId, Frames};
@@ -11,18 +12,6 @@ use super::unsynch;
 pub(crate) enum NoTag {
     TryForward,
     Done,
-}
-
-#[must_use]
-pub(crate) enum ReadResult {
-    NoTag(NoTag),
-    HeaderErr(Error),
-    FramesErr {
-        header: Header,
-        tag_len_bytes: u32,
-        err: Error,
-    },
-    Ok { tag: Tag, len_bytes: u32 },
 }
 
 pub(crate) const HEADER_LEN: usize = 10;
@@ -38,19 +27,22 @@ pub struct Header {
 
 impl Header {
     fn read<T: Read>(rd: &mut Limited<T>, bytes: &[u8; HEADER_LEN], len: u32)
-        -> Result<(Self, u32, u32)>
+        -> io::Result<(Self, u32, u32)>
     {
         let version = Version::new(2, bytes[3], bytes[4]);
         if version.minor < 2 || version.minor > 4 {
-            return Err(invalid_data_err("bad version"));
+            return Err(Error("bad version").into_invalid_data_err());
         }
 
         let flags = bytes[5];
 
         match version.minor {
-            2 if flags & 0b0011_1111 != 0 => return Err(invalid_data_err("invalid flags for v2.2")),
-            3 if flags & 0b0001_1111 != 0 => return Err(invalid_data_err("invalid flags for v2.3")),
-            4 if flags & 0b0000_1111 != 0 => return Err(invalid_data_err("invalid flags for v2.4")),
+            2 if flags & 0b0011_1111 != 0 =>
+                return Err(Error("invalid flags for v2.2").into_invalid_data_err()),
+            3 if flags & 0b0001_1111 != 0 =>
+                return Err(Error("invalid flags for v2.3").into_invalid_data_err()),
+            4 if flags & 0b0000_1111 != 0 =>
+                return Err(Error("invalid flags for v2.4").into_invalid_data_err()),
             _ => {},
 
         }
@@ -67,7 +59,7 @@ impl Header {
             }
         };
         if compression {
-            return Err(invalid_data_err("v2.2 compression is not supported"));
+            return Err(Error("v2.2 compression is not supported").into_invalid_data_err());
         }
 
         let experimental = flags.get_bit(5);
@@ -77,9 +69,9 @@ impl Header {
             // FIXME https://github.com/quodlibet/quodlibet/issues/126
             let (ext_len, _data_len) = if version >= Version::V2_4 {
                 let ext_len = unsynch::read_u32(rd)?
-                    .ok_or_else(|| invalid_data_err("extended header size is not synch safe"))?;
+                    .ok_or_else(|| Error("extended header size is not synch safe").into_invalid_data_err())?;
                 if ext_len < 4 {
-                    return Err(invalid_data_err("extended header size is too small"));
+                    return Err(Error("extended header size is too small").into_invalid_data_err());
                 }
                 (ext_len, ext_len - 4)
             } else {
@@ -87,7 +79,7 @@ impl Header {
                 (ext_len, ext_len)
             };
 
-            let _ext_data = read_vec_limited(rd, ext_len as usize);
+            let _ext_data = read_vec_limited(rd, ext_len as usize, "extended header is truncated");
 
             ext_len
         } else {
@@ -159,34 +151,21 @@ impl Tag {
         }
     }
 
-    pub(crate) fn read(rd: &mut impl Read, limit: Option<u64>) -> ReadResult {
+    pub(crate) fn read(rd: &mut impl Read, limit: Option<u64>) -> io::Result<(Self, u32)> {
         let rd = &mut Limited::new(rd, limit.unwrap_or(u64::max_value()));
 
         let mut bytes = [0; HEADER_LEN];
-        match rd.read_exact(&mut bytes) {
-            Ok(()) => {}
-            Err(e) => return if e.kind() == ErrorKind::UnexpectedEof {
-                ReadResult::NoTag(NoTag::Done)
-            } else {
-                ReadResult::HeaderErr(e)
-            }
-        }
+        rd.read_exact(&mut bytes)?;
 
         if &bytes[..3] != b"ID3"
             || bytes[4] == 0xff || bytes[5] == 0xff
         {
-            return ReadResult::NoTag(NoTag::TryForward);
+            return Err(Error("bad magic").into_invalid_data_err());
         }
-        let len = if let Some(len) = unsynch::decode_u32(&bytes[6..10]) {
-            len
-        } else {
-            return ReadResult::NoTag(NoTag::TryForward);
-        };
+        let len = unsynch::decode_u32(&bytes[6..10])
+            .ok_or_else(|| Error("bad tag len").into_invalid_data_err())?;
 
-        let (header, ext_len, tag_len) = match Header::read(rd, &bytes, len) {
-            Ok(v) => v,
-            Err(e) => return ReadResult::HeaderErr(e),
-        };
+        let (header, ext_len, tag_len) = Header::read(rd, &bytes, len)?;
 
         if header.unsynch {
             // FIXME decode
@@ -195,29 +174,17 @@ impl Tag {
 
         let frames_len = len - ext_len;
         if rd.max_available() < frames_len as u64 {
-            return ReadResult::FramesErr {
-                header,
-                tag_len_bytes: tag_len,
-                err: unexpected_eof_err(),
-            };
+            return Err(unexpected_eof_err("tag truncated"));
         }
 
-        let frames = match Frames::read(rd, header.version, frames_len) {
-            Ok(v) => v,
-            Err(err) => return ReadResult::FramesErr {
-                header,
-                tag_len_bytes: tag_len,
-                err,
-            },
+        let frames = Frames::read(rd, header.version, frames_len)?;
+
+        let tag = Self {
+            header,
+            frames,
         };
 
-        ReadResult::Ok {
-            tag: Tag {
-                header,
-                frames,
-            },
-            len_bytes: tag_len,
-        }
+        Ok((tag, tag_len))
     }
 
     fn fid(&self, post_v2_3: FrameId, pre_v2_3: FrameId) -> FrameId {

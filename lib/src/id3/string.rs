@@ -1,9 +1,8 @@
 use encoding::all::{ISO_8859_1, UTF_16BE, UTF_16LE};
 use encoding::{DecoderTrap, Encoding as _};
-use std::io::Result;
 
 pub use crate::id3::frame::Encoding;
-use crate::util::*;
+use crate::error::*;
 
 pub struct Decoder {
     encoding: Encoding,
@@ -20,25 +19,25 @@ impl Decoder {
         use Encoding::*;
         Ok(match self.encoding {
             Latin1 => ISO_8859_1.decode(s, DecoderTrap::Strict)
-                .map_err(|_| invalid_data_err("bad ISO-8859-1 string"))?,
+                .map_err(|_| Error("bad ISO-8859-1 string"))?,
             Utf16 => {
                 if s.len() < 2 {
-                    return Err(invalid_data_err("unexpected EOF"));
+                    return Err(Error("UTF16 BOM is truncated"));
                 }
                 if s[0] == 0xfe && s[1] == 0xff {
                     UTF_16BE.decode(&s[2..], DecoderTrap::Strict)
-                        .map_err(|_| invalid_data_err("bad UTF-16BE string"))?
+                        .map_err(|_| Error("bad UTF-16BE string"))?
                 } else if s[0] == 0xff && s[1] == 0xfe {
                     UTF_16LE.decode(&s[2..], DecoderTrap::Strict)
-                        .map_err(|_| invalid_data_err("bad UTF-16LE string"))?
+                        .map_err(|_| Error("bad UTF-16LE string"))?
                 } else {
-                    return Err(invalid_data_err("bad BOM"));
+                    return Err(Error("bad BOM"));
                 }
             }
             Utf16BE => UTF_16BE.decode(&s, DecoderTrap::Strict)
-                .map_err(|_| invalid_data_err("bad UTF-16BE string"))?,
+                .map_err(|_| Error("bad UTF-16BE string"))?,
             Utf8 => std::str::from_utf8(s)
-                .map_err(|_| invalid_data_err("bad UTF-8 string"))?
+                .map_err(|_| Error("bad UTF-8 string"))?
                 .into(),
         })
     }
@@ -62,7 +61,7 @@ impl Decoder {
         let (buf, rest) = match self.find_null(buf) {
             Some(i) => (&buf[..i], &buf[i + self.null_len()..]),
             None => if fail_if_no_null {
-                return Err(invalid_data_err("bad null-terminated string"));
+                return Err(Error("bad null-terminated string"));
             } else {
                 (buf, &[][..])
             }

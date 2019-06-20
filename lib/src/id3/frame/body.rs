@@ -1,6 +1,7 @@
+use std::io;
 use std::io::prelude::*;
-use std::io::Result;
 
+use crate::error::*;
 use super::*;
 use super::super::string::Decoder;
 
@@ -75,14 +76,16 @@ impl Body {
         }
     }
 
-    pub(crate) fn read<T: Read>(rd: &mut Limited<T>, frame_id: FrameId, len: u32) -> Result<Self> {
-        let bytes = read_vec_limited(rd, len as usize)?;
-        Self::decode(frame_id, bytes)
+    pub(crate) fn read<T: Read>(rd: &mut Limited<T>, frame_id: FrameId, len: u32)
+        -> io::Result<Self>
+    {
+        let bytes = read_vec_limited(rd, len as usize, "frame truncated")?;
+        Self::decode(frame_id, bytes).map_err(|e| e.into_invalid_data_err())
     }
 
     fn decode(frame_id: FrameId, buf: Vec<u8>) -> Result<Self> {
         if buf.is_empty() {
-            return Err(unexpected_eof_err());
+            return Err(Error("frame body is empty"));
         }
         match frame_id {
             FrameId::COMMENT | FrameId::V22_COMMENT => Comment::decode(&buf).map(Body::Comment),
@@ -167,7 +170,7 @@ pub struct Comment {
 impl Comment {
     fn decode(buf: &[u8]) -> Result<Self> {
         if buf.len() < 5 {
-            return Err(unexpected_eof_err());
+            return Err(Error("frame truncated"));
         }
         let encoding = Encoding::from_u8(buf[0])?;
         let decoder = Decoder::new(encoding);

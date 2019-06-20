@@ -4,7 +4,7 @@ use humantime::format_duration;
 use memmap::Mmap;
 use std::fs::File;
 use std::fmt;
-use std::io::{Cursor, Error, ErrorKind, Result};
+use std::io::{Cursor, Result};
 
 use tagen::id3;
 use tagen::mpeg::{Mpeg, Vbr};
@@ -43,14 +43,13 @@ fn print_file(filename: &str) -> Result<()> {
     let file = File::open(filename)?;
     let file_len = file.metadata()?.len();
     let rd = Cursor::new(unsafe { Mmap::map(&file)? });
-    let mpeg = Mpeg::read(rd)?
-        .ok_or_else(|| Error::new(ErrorKind::InvalidInput, "not a valid MPEG file"))?;
+    let mpeg = Mpeg::read(rd)?;
 
     let h = mpeg.header();
 
     print_line("File", filename);
     print_line("File Length", file_len.file_size(file_size_opts::CONVENTIONAL).unwrap());
-    println!("Format: MPEG V{} Layer {}", h.version, h.layer);
+    print_line("Format", format!("MPEG V{} Layer {}", h.version, h.layer));
     print_line("Duration", format_duration(mpeg.duration()));
     print_line("Channels", h.channel_mode.count());
     print_line("Sample Rate", WithUnit::new(h.samples_per_sec as f64 / 1000.0, "kHz"));
@@ -59,11 +58,11 @@ fn print_file(filename: &str) -> Result<()> {
     println!();
     println!("MPEG");
     println!("----------------------------------------");
-    println!("Channel Mode: {}", h.channel_mode);
-    println!("CRC Protected: {}", h.crc_protected);
-    println!("Copyrighted: {}", h.copyrighted);
-    println!("Original: {}", h.original);
-    println!("Emphasis: {}", h.emphasis);
+    print_line("Channel Mode", h.channel_mode);
+    print_line("CRC Protected", h.crc_protected);
+    print_line("Copyrighted", h.copyrighted);
+    print_line("Original", h.original);
+    print_line("Emphasis", h.emphasis);
     if let Some(v) = mpeg.vbr() {
         match v {
             Vbr::Xing(v) => {
@@ -99,10 +98,10 @@ fn print_file(filename: &str) -> Result<()> {
         println!();
         println!("ID3v1");
         println!("----------------------------------------");
-        print_opt_line("Artist", non_blank(&v.artist));
-        print_opt_line("Artist (ext)", v.ext.as_ref().map(|v| &v.artist).and_then(non_blank));
         print_opt_line("Title", non_blank(&v.title));
         print_opt_line("Title (ext)", v.ext.as_ref().map(|v| &v.title).and_then(non_blank));
+        print_opt_line("Artist", non_blank(&v.artist));
+        print_opt_line("Artist (ext)", v.ext.as_ref().map(|v| &v.artist).and_then(non_blank));
         print_opt_line("Album", non_blank(&v.album));
         print_opt_line("Album (ext)", v.ext.as_ref().map(|v| &v.album).and_then(non_blank));
         print_opt_line("Year", non_blank(&v.year));
@@ -146,7 +145,7 @@ fn main() {
             println!("================================================================================");
         }
         if let Err(e) = print_file(&input) {
-            eprintln!("Error analyzing `{}`: {}", input, e);
+            eprintln!("Error analyzing `{}`: {} ({:?})", input, e, e.kind());
         }
     }
 }

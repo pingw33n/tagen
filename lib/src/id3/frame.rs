@@ -5,9 +5,10 @@ use bit_field::BitField;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::io;
 use std::io::prelude::*;
-use std::io::Result;
 
+use crate::error::*;
 use crate::util::*;
 use super::Version;
 use super::unsynch;
@@ -69,20 +70,15 @@ impl Encoding {
         }
     }
 
-    fn try_from_u8(v: u8) -> Option<Self> {
+    fn from_u8(v: u8) -> Result<Self> {
         use Encoding::*;
-        Some(match v {
+        Ok(match v {
             0 => Latin1,
             1 => Utf16,
             2 => Utf16BE,
             3 => Utf8,
-            _ => return None,
+            _ => return Err(Error("bad encoding type")),
         })
-    }
-
-    pub(crate) fn from_u8(v: u8) -> Result<Self> {
-        Self::try_from_u8(v)
-            .ok_or_else(|| invalid_data_err("bad encoding type"))
     }
 }
 
@@ -93,7 +89,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    fn read<R: Read>(rd: &mut Limited<R>, version: Version) -> Result<Option<Self>> {
+    fn read<R: Read>(rd: &mut Limited<R>, version: Version) -> io::Result<Option<Self>> {
         assert!(version.minor >= 2 && version.minor <= 4);
         if version.minor == 2 {
             return Self::read_v2_2(rd);
@@ -101,11 +97,12 @@ impl Frame {
 
         let mut buf = [0; HEADER_LEN];
 
-        buf[0] = rd.read_u8()?;
-        if buf[0] == 0 {
-            // Padding reached.
+        let b = rd.read_u8().into_opt()?;
+        if b == None || b == Some(0) {
+            // EOF or padding reached.
             return Ok(None);
         }
+        buf[0] = b.unwrap();
 
         rd.read_exact(&mut buf[1..])?;
 
@@ -118,13 +115,13 @@ impl Frame {
         let flags_map = match version.minor {
             3 => {
                 if flags1 & 0b0001_1111 != 0 || flags2 & 0b0001_1111 != 0 {
-                    return Ok(None);
+                    return Err(Error("bad flags for frame v2.3").into_invalid_data_err());
                 }
                 V2_3_FLAGS_MAP
             }
             4 => {
                 if flags1 & 0b1000_1111 != 0 || flags2 & 0b1011_0000 != 0 {
-                    return Ok(None);
+                    return Err(Error("bad flags for frame v2.4").into_invalid_data_err());
                 }
                 V2_4_FLAGS_MAP
             }
@@ -148,7 +145,7 @@ impl Frame {
 
         let id = FrameId::new([buf[0], buf[1], buf[2], buf[3]]);
         let len = unsynch::decode_u32(&buf[4..8])
-            .ok_or_else(|| invalid_data_err("bad synchsafe len"))?;
+            .ok_or_else(|| Error("bad frame len").into_invalid_data_err())?;
 
         let body = Body::read(rd, id, len)?;
 
@@ -158,14 +155,15 @@ impl Frame {
         }))
     }
 
-    fn read_v2_2<R: Read>(rd: &mut Limited<R>) -> Result<Option<Self>> {
+    fn read_v2_2<R: Read>(rd: &mut Limited<R>) -> io::Result<Option<Self>> {
         let mut buf = [0; HEADER_V2_2_LEN];
 
-        buf[0] = rd.read_u8()?;
-        if buf[0] == 0 {
-            // Padding reached.
+        let b = rd.read_u8().into_opt()?;
+        if b == None || b == Some(0) {
+            // EOF or padding reached.
             return Ok(None);
         }
+        buf[0] = b.unwrap();
 
         rd.read_exact(&mut buf[1..])?;
 
@@ -266,7 +264,7 @@ impl Frames {
         }
     }
 
-    pub(crate) fn read(rd: &mut impl Read, version: Version, len: u32) -> Result<Self> {
+    pub(crate) fn read(rd: &mut impl Read, version: Version, len: u32) -> io::Result<Self> {
         if version.minor == 4 {
             // FIXME determine_bpi
         }
@@ -274,14 +272,14 @@ impl Frames {
         Self::read0(rd, len, version)
     }
 
-    fn read0(rd: &mut impl Read, len: u32, version: Version) -> Result<Frames> {
+    fn read0(rd: &mut impl Read, len: u32, version: Version) -> io::Result<Frames> {
         let rd = &mut Limited::new(rd, len as u64);
         let mut r = Frames::new();
         while rd.max_available() > 0 {
-            if let Some(frame) = Frame::read(rd, version)? {
-                r.insert(frame);
-            } else {
-                break;
+            match Frame::read(rd, version) {
+                Ok(Some(frame)) => r.insert(frame),
+                Ok(None) => break,
+                Err(e) => return Err(e),
             }
         }
         Ok(r)

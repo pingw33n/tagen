@@ -1,8 +1,10 @@
 use bit_field::BitField;
 use byteorder::{BE, ReadBytesExt};
+use std::io::Cursor;
 use std::io::prelude::*;
-use std::io::{Cursor, ErrorKind, Result};
 
+use crate::error::*;
+use crate::util::*;
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -26,15 +28,15 @@ impl Vbr {
         }
     }
 
-    pub(crate) fn read(mut rd: impl Read) -> Result<Option<Self>> {
+    pub(crate) fn read(mut rd: impl Read) -> io::Result<Self> {
         let mut tag = [0; 4];
         rd.read_exact(&mut tag)?;
 
-        Ok(match &tag[..] {
-            b"Xing" | b"Info" => Xing::read(&mut rd)?.map(Vbr::Xing),
-            b"VBRI" => Vbri::read(&mut rd)?.map(Vbr::Vbri),
-            _ => None,
-        })
+        match &tag[..] {
+            b"Xing" | b"Info" => Xing::read(&mut rd).map(Vbr::Xing),
+            b"VBRI" => Vbri::read(&mut rd).map(Vbr::Vbri),
+            _ => Err(Error("bad magic").into_invalid_data_err()),
+        }
     }
 
     pub(crate) fn offset(header: &Header) -> u64 {
@@ -67,7 +69,7 @@ pub struct Xing {
 }
 
 impl Xing {
-    fn read(mut rd: impl Read) -> Result<Option<Box<Self>>> {
+    fn read(mut rd: impl Read) -> io::Result<Box<Self>> {
         let flags = rd.read_u32::<BigEndian>()?;
 
         let stream_len_frames = if flags.get_bit(0) {
@@ -90,20 +92,20 @@ impl Xing {
             None
         };
 
-        let lame_version = LameVersion::read(&mut rd)?;
+        let lame_version = LameVersion::read(&mut rd).into_opt()?;
         let lame = if lame_version.is_some() {
-            Lame::read(&mut rd)?
+            Lame::read(&mut rd).into_opt()?
         } else {
             None
         };
 
-        Ok(Some(Box::new(Self {
+        Ok(Box::new(Self {
             stream_len_frames,
             stream_len_bytes,
             quality,
             lame_version,
             lame,
-        })))
+        }))
     }
 }
 
@@ -122,21 +124,11 @@ impl LameVersion {
         }
     }
 
-    fn read(mut rd: impl Read) -> Result<Option<Self>> {
+    fn read(mut rd: impl Read) -> io::Result<Self> {
         let mut buf = [0; 9];
-        match rd.read_exact(&mut buf) {
-            Ok(()) => {},
-            Err(e) => return if e.kind() == ErrorKind::UnexpectedEof {
-                Ok(None)
-            } else {
-                Err(e)
-            }
-        }
-        if let Some(v) = LameVersion::from_bytes(buf) {
-            Ok(Some(v))
-        } else {
-            Ok(None)
-        }
+        rd.read_exact(&mut buf)?;
+        LameVersion::from_bytes(buf)
+            .ok_or_else(|| Error("bad LAME version").into_invalid_data_err())
     }
 }
 
@@ -193,25 +185,18 @@ pub struct Lame {
 }
 
 impl Lame {
-    fn read(mut rd: impl Read) -> Result<Option<Self>> {
+    fn read(mut rd: impl Read) -> io::Result<Self> {
         let mut buf = [0; 27];
-        match rd.read_exact(&mut buf) {
-            Ok(()) => {},
-            Err(e) => return if e.kind() == ErrorKind::UnexpectedEof {
-                Ok(None)
-            } else {
-                Err(e)
-            }
-        }
-        Ok(Self::decode(&buf))
+        rd.read_exact(&mut buf)?;
+        Self::decode(&buf).map_err(|e| e.into_invalid_data_err())
     }
 
-    fn decode(buf: &[u8]) -> Option<Self> {
+    fn decode(buf: &[u8]) -> Result<Self> {
         let brd = &mut BitReader::new(buf);
 
         let revision = brd.read_u8(4).unwrap();
         if revision != 0 {
-            return None;
+            return Err(Error("bad LAME revision"));
         }
 
         let vbr_method = brd.read_u8(4).unwrap();
@@ -283,7 +268,7 @@ impl Lame {
         let music_crc = brd.read_u16(16).unwrap();
         let header_crc = brd.read_u16(16).unwrap();
 
-        Some(Self {
+        Ok(Self {
             vbr_method,
             lowpass_filter,
             track_peak,
@@ -319,17 +304,10 @@ pub struct Vbri {
 }
 
 impl Vbri {
-    fn read(mut rd: impl Read) -> Result<Option<Self>> {
+    fn read(mut rd: impl Read) -> io::Result<Self> {
         let mut buf = [0; 22];
 
-        match rd.read_exact(&mut buf) {
-            Ok(()) => {},
-            Err(e) => return if e.kind() == ErrorKind::UnexpectedEof {
-                Ok(None)
-            } else {
-                Err(e)
-            }
-        }
+        rd.read_exact(&mut buf)?;
 
         let mut brd = Cursor::new(buf);
 
@@ -343,26 +321,19 @@ impl Vbri {
         let _toc_scale = brd.read_u16::<BE>().unwrap();
         let toc_entry_len_bytes = brd.read_u16::<BE>().unwrap();
         if toc_entry_len_bytes != 2 && toc_entry_len_bytes != 4 {
-            return Ok(None);
+            return Err(Error("bad VBRI TOC len").into_invalid_data_err());
         }
         let _toc_entry_len_frames = brd.read_u16::<BE>().unwrap();
 
         let toc_len = toc_entry_len_bytes as u32 * toc_entry_count as u32;
         let mut _toc = Vec::with_capacity(toc_len as usize);
-        match rd.take(toc_len as u64).read_to_end(&mut _toc) {
-            Ok(_) => {},
-            Err(e) => return if e.kind() == ErrorKind::UnexpectedEof {
-                Ok(None)
-            } else {
-                Err(e)
-            }
-        }
+        rd.take(toc_len as u64).read_to_end(&mut _toc)?;
 
-        Ok(Some(Self {
+        Ok(Self {
             version,
             quality,
             stream_len_bytes,
             stream_len_frames,
-        }))
+        })
     }
 }
