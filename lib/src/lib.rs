@@ -15,16 +15,3 @@ use mpeg::Mpeg;
 pub enum Format {
     Mpeg(Mpeg),
 }
-
-pub struct File<T> {
-    rd: T,
-    format: Format,
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-
-    }
-}
