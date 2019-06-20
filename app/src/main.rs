@@ -88,9 +88,11 @@ fn print_file(filename: &str) -> Result<()> {
         println!();
         println!("ID3v{}", v.header().version);
         println!("----------------------------------------");
-        print_opt_line("Artist", v.artist());
         print_opt_line("Title", v.title());
+        print_opt_line("Artist", v.artist());
         print_opt_line("Album", v.album());
+        print_opt_line("Genre", v.genre());
+        print_opt_line("Release Date", v.release_date());
     }
 
     if let Some(v) = mpeg.id3v1() {

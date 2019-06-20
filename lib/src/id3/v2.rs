@@ -4,10 +4,9 @@ use std::io::prelude::*;
 use std::io::{Error, ErrorKind, Result};
 
 use crate::util::*;
-use super::Version;
-use super::frame::Frames;
+use super::{Timestamp, Version};
+use super::frame::{FrameId, Frames};
 use super::unsynch;
-use crate::id3::frame::FrameId;
 
 pub(crate) enum NoTag {
     TryForward,
@@ -134,6 +133,30 @@ impl Tag {
 
     pub fn title(&self) -> Option<&str> {
         self.frames.first_text_str(self.fid(FrameId::TITLE, FrameId::V22_TITLE))
+    }
+
+    pub fn genre(&self) -> Option<&str> {
+        self.frames.first_text_str(self.fid(FrameId::GENRE, FrameId::V22_GENRE))
+    }
+
+    pub fn release_date(&self) -> Option<Timestamp> {
+        if self.header.version.minor == 4 {
+            let s = self.frames.first_text_str(FrameId::RELEASE_DATE)?;
+            s.parse().ok()
+        } else {
+            let year = self.frames.first_text_str(self.fid(FrameId::V23_YEAR, FrameId::V22_YEAR))
+                .and_then(|s| s.parse().ok());
+            if let Some(year) = year {
+                let month_day = self.frames.first_text_str(self.fid(FrameId::V23_DATE, FrameId::V22_DATE))
+                    .filter(|s| s.len() == 4)
+                    .and_then(|s| s[..2].parse().ok().map(|m| (m, s[2..].parse().ok())));
+                let month = month_day.map(|(m, _)| m);
+                let day = month_day.and_then(|(_, d)| d);
+                Timestamp::new(year, month, day, None, None, None)
+            } else {
+                None
+            }
+        }
     }
 
     pub(crate) fn read(rd: &mut impl Read, limit: Option<u64>) -> ReadResult {

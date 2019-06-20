@@ -35,7 +35,7 @@ impl Decoder {
                     return Err(invalid_data_err("bad BOM"));
                 }
             }
-            Utf16BE => UTF_16BE.decode(&s[2..], DecoderTrap::Strict)
+            Utf16BE => UTF_16BE.decode(&s, DecoderTrap::Strict)
                 .map_err(|_| invalid_data_err("bad UTF-16BE string"))?,
             Utf8 => std::str::from_utf8(s)
                 .map_err(|_| invalid_data_err("bad UTF-8 string"))?
