@@ -4,15 +4,11 @@ use std::io::prelude::*;
 use std::io;
 
 use crate::error::*;
+use crate::timestamp::Timestamp;
 use crate::util::*;
-use super::{Timestamp, Version};
+use super::Version;
 use super::frame::{FrameId, Frames};
 use super::unsynch;
-
-pub(crate) enum NoTag {
-    TryForward,
-    Done,
-}
 
 pub(crate) const HEADER_LEN: usize = 10;
 

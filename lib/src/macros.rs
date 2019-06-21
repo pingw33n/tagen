@@ -29,3 +29,19 @@ macro_rules! impl_as_into {
         )+
     };
 }
+
+macro_rules! impl_enum_bits_ref {
+    ($enum:ident: $($as_name:ident <= $vari:ident ( $type:ty ),)+) => {
+        $(
+            impl $enum<'_> {
+                pub fn $as_name(&self) -> Option<&$type> {
+                    if let $enum :: $vari ( ref v ) = self {
+                        Some(v)
+                    } else {
+                        None
+                    }
+                }
+            }
+        )+
+    };
+}

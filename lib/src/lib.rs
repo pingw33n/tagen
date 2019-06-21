@@ -8,11 +8,9 @@ mod macros;
 
 pub mod error;
 pub mod id3;
+pub mod meta;
 pub mod mpeg;
+pub mod tags;
+pub mod timestamp;
 mod util;
 
-use mpeg::Mpeg;
-
-pub enum Format {
-    Mpeg(Mpeg),
-}

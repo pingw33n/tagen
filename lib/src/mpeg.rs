@@ -13,6 +13,7 @@ use crate::error::*;
 use crate::util::*;
 use super::id3;
 pub use vbr::*;
+use crate::tags::TagsRef;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Version {
@@ -326,12 +327,11 @@ impl Mpeg {
         self.vbr.as_ref()
     }
 
-    pub fn id3v1(&self) -> Option<&id3::v1::Tag> {
-        self.id3v1.as_ref()
-    }
-
-    pub fn id3v2(&self) -> Option<&id3::v2::Tag> {
-        self.id3v2.as_ref()
+    pub fn tags(&self) -> TagsRef {
+        TagsRef {
+            id3v1: self.id3v1.as_ref(),
+            id3v2: self.id3v2.as_ref(),
+        }
     }
 
     pub fn duration(&self) -> Duration {

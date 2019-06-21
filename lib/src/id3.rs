@@ -1,14 +1,11 @@
 pub mod frame;
 pub mod string;
-mod timestamp;
 pub mod unsynch;
 pub mod v1;
 pub mod v2;
 
 use std::cmp;
 use std::fmt;
-
-pub use timestamp::Timestamp;
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq)]
 pub struct Version {

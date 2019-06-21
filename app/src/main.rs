@@ -1,13 +1,19 @@
+#![allow(dead_code)]
+#![deny(non_snake_case)]
+#![deny(unused_imports)]
+#![deny(unused_must_use)]
+
 use clap::{Arg, App};
 use humansize::{FileSize, file_size_opts};
 use humantime::format_duration;
 use memmap::Mmap;
 use std::fs::File;
 use std::fmt;
-use std::io::{Cursor, Result};
+use std::io::{self, Cursor, Result};
 
 use tagen::id3;
 use tagen::mpeg::{Mpeg, Vbr};
+use tagen::meta::*;
 
 struct WithUnit<V, U> {
     v: V,
@@ -39,25 +45,64 @@ fn print_opt_line<T: fmt::Display>(name: &str, v: Option<T>) {
     }
 }
 
+fn print_sep_line() {
+    println!("----------------------------------------");
+}
+
 fn print_file(filename: &str) -> Result<()> {
     let file = File::open(filename)?;
     let file_len = file.metadata()?.len();
     let rd = Cursor::new(unsafe { Mmap::map(&file)? });
-    let mpeg = Mpeg::read(rd)?;
-
-    let h = mpeg.header();
+    let meta = Meta::read(rd)?.ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData,
+        "unknown format"))?;
+    let format = meta.format();
 
     print_line("File", filename);
     print_line("File Length", file_len.file_size(file_size_opts::CONVENTIONAL).unwrap());
-    print_line("Format", format!("MPEG V{} Layer {}", h.version, h.layer));
-    print_line("Duration", format_duration(mpeg.duration()));
-    print_line("Channels", h.channel_mode.count());
-    print_line("Sample Rate", WithUnit::new(h.samples_per_sec as f64 / 1000.0, "kHz"));
-    print_line("Bitrate", WithUnit::new(mpeg.bits_per_sec() as f64 / 1000.0, "kb/s"));
 
     println!();
+    println!("Audio");
+    print_sep_line();
+    print_line("Format", &format);
+    print_line("Duration", format_duration(meta.duration()));
+    print_line("Channels", meta.channel_count());
+    print_line("Sample Rate", WithUnit::new(meta.samples_per_sec() as f64 / 1000.0, "kHz"));
+    print_opt_line("Sample Size", meta.bits_per_sample());
+    print_line("Bitrate", WithUnit::new(meta.bits_per_sec() as f64 / 1000.0, "kb/s"));
+
+    println!();
+    println!("General tags");
+    print_sep_line();
+    let tags = meta.tags();
+
+    let mut avail_tags = Vec::new();
+    if tags.id3v1.is_some() {
+        avail_tags.push("ID3v1".to_owned());
+    }
+    if let Some(v) = tags.id3v2 {
+        avail_tags.push(format!("ID3v{}", v.header().version));
+    }
+    print_line("Available", avail_tags.join(", "));
+
+    print_opt_line("Title", tags.title());
+    print_opt_line("Artist", tags.artist());
+    print_opt_line("Album", tags.album());
+    print_opt_line("Genre", tags.genre());
+    print_opt_line("Date", tags.date());
+
+    match format {
+        FormatRef::Mpeg(v) => print_mpeg(&v),
+        FormatRef::__Nonexhaustive => unreachable!(),
+    }
+
+    Ok(())
+}
+
+fn print_mpeg(mpeg: &Mpeg) {
+    let h = mpeg.header();
+    println!();
     println!("MPEG");
-    println!("----------------------------------------");
+    print_sep_line();
     print_line("Channel Mode", h.channel_mode);
     print_line("CRC Protected", h.crc_protected);
     print_line("Copyrighted", h.copyrighted);
@@ -83,10 +128,10 @@ fn print_file(filename: &str) -> Result<()> {
         }
     }
 
-    if let Some(v) = mpeg.id3v2() {
+    if let Some(v) = mpeg.tags().id3v2 {
         println!();
         println!("ID3v{}", v.header().version);
-        println!("----------------------------------------");
+        print_sep_line();
         print_opt_line("Title", v.title());
         print_opt_line("Artist", v.artist());
         print_opt_line("Album", v.album());
@@ -94,10 +139,10 @@ fn print_file(filename: &str) -> Result<()> {
         print_opt_line("Release Date", v.release_date());
     }
 
-    if let Some(v) = mpeg.id3v1() {
+    if let Some(v) = mpeg.tags().id3v1 {
         println!();
         println!("ID3v1");
-        println!("----------------------------------------");
+        print_sep_line();
         print_opt_line("Title", non_blank(&v.title));
         print_opt_line("Title (ext)", v.ext.as_ref().map(|v| &v.title).and_then(non_blank));
         print_opt_line("Artist", non_blank(&v.artist));
@@ -117,8 +162,6 @@ fn print_file(filename: &str) -> Result<()> {
             print_opt_line("End Time", non_blank(&v.end_time));
         }
     }
-
-    Ok(())
 }
 
 fn non_blank<T: AsRef<str>>(s: T) -> Option<T> {

@@ -3,6 +3,7 @@ use std::io::{self, ErrorKind, SeekFrom};
 
 use super::string::*;
 use crate::error::*;
+use crate::timestamp::Timestamp;
 
 const LEN: usize = 128;
 const EXT_LEN: usize = 227;
@@ -230,6 +231,11 @@ impl Tag {
 
     pub fn best_album(&self) -> &str {
         self.ext.as_ref().map(|e| &e.album).unwrap_or(&self.album)
+    }
+
+    pub fn date(&self) -> Option<Timestamp> {
+        let year = self.year.parse().ok()?;
+        Timestamp::new_y(year)
     }
 
     pub fn len(&self) -> u32 {
