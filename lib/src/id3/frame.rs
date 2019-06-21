@@ -200,6 +200,7 @@ impl PartialEq for FrameKey {
                 | Text(_)
                 | UniqueFileId(_)
                 => true,
+                __Nonexhaustive => unreachable!(),
             }
     }
 }
@@ -223,6 +224,7 @@ impl Hash for FrameKey {
             | Text(_)
             | UniqueFileId(_)
             => {}
+            __Nonexhaustive => unreachable!(),
         }
     }
 }

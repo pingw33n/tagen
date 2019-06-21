@@ -14,6 +14,9 @@ pub enum BodyKind {
     Url,
     UserText,
     UserUrl,
+
+    #[doc(hidden)]
+    __Nonexhaustive,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -25,6 +28,9 @@ pub enum Body {
     Url(String),
     UserText(UserText),
     UserUrl(UserUrl),
+
+    #[doc(hidden)]
+    __Nonexhaustive,
 }
 
 impl Body {
@@ -38,6 +44,7 @@ impl Body {
             Url(_) => BodyKind::Url,
             UserText(_) => BodyKind::UserText,
             UserUrl(_) => BodyKind::UserUrl,
+            __Nonexhaustive => unreachable!(),
         }
     }
 
@@ -73,6 +80,7 @@ impl Body {
                 *v = o;
             }
             Url(v) => *v = o.into_url().unwrap(),
+            __Nonexhaustive => unreachable!(),
         }
     }
 
