@@ -9,9 +9,8 @@ use humantime::format_duration;
 use memmap::Mmap;
 use std::fs::File;
 use std::fmt;
-use std::io::{self, Cursor, Result, Write};
+use std::io::{self, Cursor, Result};
 
-use tagen::id3;
 use tagen::mpeg::{Mpeg, Vbr};
 use tagen::meta::*;
 
@@ -161,9 +160,7 @@ fn print_mpeg(mpeg: &Mpeg) {
         print_opt_line("Year", non_blank(&v.year));
         print_opt_line("Comment", non_blank(&v.comment));
         print_opt_line("Track", v.track.as_ref());
-        if let Some(v) = v.genre {
-            print_line("Genre", format_args!("{} ({})", id3::v1::genre_str(v).unwrap_or("?"), v));
-        }
+        print_opt_line("Genre", v.genre);
         print_opt_line("Genre (ext)", v.ext.as_ref().map(|v| &v.genre).and_then(non_blank));
         if let Some(v) = &v.ext {
             print_opt_line("Speed", v.speed);

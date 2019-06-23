@@ -27,7 +27,7 @@ impl<'a> TagsRef<'a> {
                 Some(if let Some(ext) = &v.ext {
                     Cow::Borrowed(ext.genre.as_str())
                 } else if let Some(g) = v.genre {
-                    if let Some(s) = crate::id3::v1::genre_str(g) {
+                    if let Some(s) = g.description() {
                         Cow::Borrowed(s)
                     } else {
                         Cow::Owned(g.to_string())
