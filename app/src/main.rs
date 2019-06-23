@@ -9,7 +9,7 @@ use humantime::format_duration;
 use memmap::Mmap;
 use std::fs::File;
 use std::fmt;
-use std::io::{self, Cursor, Result};
+use std::io::{self, Cursor, Result, Write};
 
 use tagen::id3;
 use tagen::mpeg::{Mpeg, Vbr};
@@ -137,6 +137,15 @@ fn print_mpeg(mpeg: &Mpeg) {
         print_opt_line("Album", v.album());
         print_opt_line("Genre", v.genre());
         print_opt_line("Release Date", v.release_date());
+
+        for p in v.pictures() {
+            print_line(&format!("Picture [{}]", p.descr),
+                format_args!("{}, {}, {}",
+                    p.picture_kind,
+                    p.content_type,
+                    p.data.len().file_size(file_size_opts::CONVENTIONAL).unwrap()));
+        }
+
     }
 
     if let Some(v) = mpeg.tags().id3v1 {

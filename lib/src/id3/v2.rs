@@ -8,6 +8,7 @@ use crate::timestamp::Timestamp;
 use crate::util::*;
 use super::Version;
 use super::frame::{FrameId, Frames};
+use super::frame::body::Picture;
 use super::unsynch;
 
 pub(crate) const HEADER_LEN: usize = 10;
@@ -145,6 +146,11 @@ impl Tag {
                 None
             }
         }
+    }
+
+    pub fn pictures(&self) -> impl Iterator<Item=&Picture> {
+        self.frames.get(self.fid(FrameId::PICTURE, FrameId::V22_PICTURE))
+            .map(|f| f.body.as_picture().unwrap())
     }
 
     pub(crate) fn read(rd: &mut impl Read, limit: Option<u64>) -> io::Result<(Self, u32)> {

@@ -89,7 +89,7 @@ impl FrameId {
     // Misc frames.
 
     pub const AUDIO_ENCRYPTION: Self = frame_id!(b"AENC");
-    pub const ATTACHED_PICTURE: Self = frame_id!(b"APIC");
+    pub const PICTURE: Self = frame_id!(b"APIC");
     pub const AUDIO_SEEK_POINT_INDEX: Self = frame_id!(b"ASPI");
     pub const CHAPTER: Self = frame_id!(b"CHAP");
     pub const COMMENT: Self = frame_id!(b"COMM");
@@ -174,7 +174,7 @@ impl FrameId {
     pub const V22_USER_URL: Self = v22_frame_id!(b"WXXX");
 
     pub const V22_AUDIO_ENCRYPTION: Self = v22_frame_id!(b"CRA");
-    pub const V22_ATTACHED_PICTURE: Self = v22_frame_id!(b"PIC");
+    pub const V22_PICTURE: Self = v22_frame_id!(b"PIC");
     pub const V22_COMMENT: Self = v22_frame_id!(b"COM");
     pub const V22_EQUALIZATION: Self = v22_frame_id!(b"EQU");
     pub const V23_EQUALIZATION: Self = frame_id!(b"EQUA");

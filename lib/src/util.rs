@@ -1,6 +1,7 @@
 pub mod bit_stream;
 pub mod limited;
 
+use std::fmt;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind, Result};
 
@@ -46,4 +47,16 @@ impl<T> IoResultExt<T> for std::result::Result<T, Error> {
             e
         })
     }
+}
+
+pub fn display_to_debug(d: impl fmt::Display) -> impl fmt::Debug {
+    struct Wrap<T>(T);
+
+    impl<T: fmt::Display> fmt::Debug for Wrap<T> {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            fmt::Display::fmt(&self.0, f)
+        }
+    }
+
+    Wrap(d)
 }

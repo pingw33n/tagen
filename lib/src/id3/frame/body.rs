@@ -9,6 +9,7 @@ use super::super::string::Decoder;
 pub enum BodyKind {
     Bytes,
     Comment,
+    Picture,
     Text,
     UniqueFileId,
     Url,
@@ -23,6 +24,7 @@ pub enum BodyKind {
 pub enum Body {
     Bytes(Vec<u8>),
     Comment(Comment),
+    Picture(Picture),
     Text(Text),
     UniqueFileId(UniqueFileId),
     Url(String),
@@ -39,6 +41,7 @@ impl Body {
         match self {
             Bytes(_) => BodyKind::Bytes,
             Comment(_) => BodyKind::Comment,
+            Picture(_) => BodyKind::Picture,
             Text(_) => BodyKind::Text,
             UniqueFileId(_) => BodyKind::UniqueFileId,
             Url(_) => BodyKind::Url,
@@ -48,7 +51,8 @@ impl Body {
         }
     }
 
-    pub(in super) fn merge_from(&mut self, o: Self) {
+    #[must_use]
+    pub(in super) fn merge_from(&mut self, o: Self) -> Option<Self> {
         use Body::*;
         assert_eq!(self.kind(), o.kind());
         match self {
@@ -61,6 +65,12 @@ impl Body {
                 debug_assert_eq!(v.lang, o.lang);
                 debug_assert_eq!(v.descr, o.descr);
                 v.text.push_str(&o.text);
+            }
+            Picture(v) => {
+                let mut o = o.into_picture().unwrap();
+                debug_assert_eq!(v.descr, o.descr);
+                o.descr.push(' ');
+                return Some(Picture(o));
             }
             Text(v) => {
                 let o = o.into_text().unwrap();
@@ -82,6 +92,7 @@ impl Body {
             Url(v) => *v = o.into_url().unwrap(),
             __Nonexhaustive => unreachable!(),
         }
+        None
     }
 
     pub(crate) fn read<T: Read>(rd: &mut Limited<T>, frame_id: FrameId, len: u32)
@@ -96,6 +107,8 @@ impl Body {
             return Err(Error("frame body is empty"));
         }
         match frame_id {
+            FrameId::PICTURE => Picture::decode(&buf).map(Body::Picture),
+            FrameId::V22_PICTURE => Picture::decode_v22(&buf).map(Body::Picture),
             FrameId::COMMENT | FrameId::V22_COMMENT => Comment::decode(&buf).map(Body::Comment),
             FrameId::USER_TEXT => UserText::decode(&buf).map(Body::UserText),
             FrameId::USER_URL => UserUrl::decode(&buf).map(Body::UserUrl),
@@ -115,6 +128,7 @@ impl_as_into!(
 Body:
     into_bytes, as_bytes, as_bytes_mut <= Bytes ( Vec<u8> ),
     into_comment, as_comment, as_comment_mut <= Comment ( Comment ),
+    into_picture, as_picture, as_picture_mut <= Picture ( Picture ),
     into_text, as_text, as_text_mut <= Text ( Text ),
     into_unique_file_id, as_unqiue_file_id, as_sunqiue_file_id_mut <= UniqueFileId ( UniqueFileId ),
     into_user_text, as_user_text, as_user_text_mut <= UserText ( UserText ),
@@ -191,6 +205,220 @@ impl Comment {
             descr,
             text,
         })
+    }
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub struct PictureKind(pub u8);
+
+impl PictureKind {
+    pub const OTHER: u8 = 0x00;
+
+    /// 32x32 pixels 'file icon' (PNG only)
+    pub const ICON: u8 = 0x01;
+
+    /// Other file icon
+    pub const OTHER_ICON: u8 = 0x02;
+
+    /// Cover (front)
+    pub const COVER_FRONT: u8 = 0x03;
+
+    /// Cover (back)
+    pub const COVER_BACK: u8 = 0x04;
+
+    /// Leaflet page
+    pub const LEAFLET: u8 = 0x05;
+
+    /// Media (e.g. label side of CD)
+    pub const MEDIA: u8 = 0x06;
+
+    /// Lead artist/lead performer/soloist
+    pub const LEAD_ARTIST: u8 = 0x07;
+
+    /// Artist/performer
+    pub const ARTIST: u8 = 0x08;
+
+    /// Conductor
+    pub const CONDUCTOR: u8 = 0x09;
+
+    /// Band/Orchestra
+    pub const BAND: u8 = 0x0A;
+
+    /// Composer
+    pub const COMPOSER: u8 = 0x0B;
+
+    /// Lyricist/text writer
+    pub const LYRICIST: u8 = 0x0C;
+
+    /// Recording Location
+    pub const RECORDING_LOCATION: u8 = 0x0D;
+
+    /// During recording
+    pub const DURING_RECORDING: u8 = 0x0E;
+
+    /// During performance
+    pub const DURING_PERFORMANCE: u8 = 0x0F;
+
+    /// Movie/video screen capture
+    pub const SCREEN_CAPTURE: u8 = 0x10;
+
+    /// A bright coloured fish
+    pub const BRIGHT_FISH: u8 = 0x11;
+
+    /// Illustration
+    pub const ILLUSTRATION: u8 = 0x12;
+
+    /// Band/artist logotype
+    pub const BAND_LOGO: u8 = 0x13;
+
+    /// Publisher/Studio logotype
+    pub const PUBLISHER_LOGOTYPE: u8 = 0x14;
+}
+
+impl fmt::Display for PictureKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        loop {
+            return write!(f, "{}", match self.0 {
+                Self::OTHER => "other",
+                Self::ICON => "file icon",
+                Self::OTHER_ICON => "other file icon",
+                Self::COVER_FRONT => "cover (front)",
+                Self::COVER_BACK => "cover (back)",
+                Self::LEAFLET => "leaflet page",
+                Self::MEDIA => "media",
+                Self::LEAD_ARTIST => "lead artist/lead performer/soloist",
+                Self::ARTIST => "artist/performer",
+                Self::CONDUCTOR => "conductor",
+                Self::BAND => "band/orchestra",
+                Self::COMPOSER => "composer",
+                Self::LYRICIST => "lyricist/text writer",
+                Self::RECORDING_LOCATION => "recording location",
+                Self::DURING_RECORDING => "during recording",
+                Self::DURING_PERFORMANCE => "during performance",
+                Self::SCREEN_CAPTURE => "movie/video screen capture",
+                Self::BRIGHT_FISH => "a bright coloured fish",
+                Self::ILLUSTRATION => "illustration",
+                Self::BAND_LOGO => "band/artist logotype",
+                Self::PUBLISHER_LOGOTYPE => "publisher/studio logotype",
+                _ => break,
+            });
+        }
+        write!(f, "unknown ({})", self.0)
+    }
+}
+
+impl fmt::Debug for PictureKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        loop {
+            return write!(f, "{}", match self.0 {
+                Self::OTHER => "OTHER",
+                Self::ICON => "ICON",
+                Self::OTHER_ICON => "OTHER_ICON",
+                Self::COVER_FRONT => "COVER_FRONT",
+                Self::COVER_BACK => "COVER_BACK",
+                Self::LEAFLET => "LEAFLET",
+                Self::MEDIA => "MEDIA",
+                Self::LEAD_ARTIST => "LEAD_ARTIST",
+                Self::ARTIST => "ARTIST",
+                Self::CONDUCTOR => "CONDUCTOR",
+                Self::BAND => "BAND",
+                Self::COMPOSER => "COMPOSER",
+                Self::LYRICIST => "LYRICIST",
+                Self::RECORDING_LOCATION => "RECORDING_LOCATION",
+                Self::DURING_RECORDING => "DURING_RECORDING",
+                Self::DURING_PERFORMANCE => "DURING_PERFORMANCE",
+                Self::SCREEN_CAPTURE => "SCREEN_CAPTURE",
+                Self::BRIGHT_FISH => "BRIGHT_FISH",
+                Self::ILLUSTRATION => "ILLUSTRATION",
+                Self::BAND_LOGO => "BAND_LOGO",
+                Self::PUBLISHER_LOGOTYPE => "PUBLISHER_LOGOTYPE",
+                _ => break,
+            });
+        }
+        write!(f, "PictureKind({})", self.0)
+    }
+}
+
+impl From<u8> for PictureKind {
+    fn from(v: u8) -> Self {
+        Self(v)
+    }
+}
+
+#[derive(Clone, Eq, PartialEq)]
+pub struct Picture {
+    pub encoding: Encoding,
+    pub content_type: String,
+    pub picture_kind: PictureKind,
+    pub descr: String,
+    pub data: Vec<u8>,
+}
+
+impl Picture {
+    fn decode(buf: &[u8]) -> Result<Self> {
+        if buf.len() < 6 {
+            return Err(Error("frame truncated"));
+        }
+        let encoding = Encoding::from_u8(buf[0])?;
+        let decoder = Decoder::new(encoding);
+        let (content_type, buf) = Decoder::new(Encoding::Latin1).decode_null_terminated(&buf[1..])?;
+        if buf.len() < 2 {
+            return Err(Error("frame truncated"));
+        }
+        let picture_kind = buf[0].into();
+        let (descr, buf) = decoder.decode_null_terminated(&buf[1..])?;
+        let data = buf.into();
+        Ok(Self {
+            encoding,
+            content_type,
+            picture_kind,
+            descr,
+            data,
+        })
+    }
+
+    fn decode_v22(buf: &[u8]) -> Result<Self> {
+        if buf.len() < 6 {
+            return Err(Error("frame truncated"));
+        }
+        let encoding = Encoding::from_u8(buf[0])?;
+        let decoder = Decoder::new(encoding);
+
+        let mut format = [buf[1], buf[2], buf[3]];
+        format.as_mut().make_ascii_lowercase();
+        let content_type = match &format {
+            b"bmp" => "image/bmp".to_owned(),
+            b"gif" => "image/gif".to_owned(),
+            b"jpg" => "image/jpeg".to_owned(),
+            b"png" => "image/png".to_owned(),
+            b"tif" => "image/tiff".to_owned(),
+            b"-->" => "-->".to_owned(),
+            _ => Decoder::new(Encoding::Latin1).decode(&format).unwrap(),
+        };
+
+        let picture_kind = buf[4].into();
+        let (descr, buf) = decoder.decode_null_terminated(&buf[5..])?;
+        let data = buf.into();
+
+        Ok(Self {
+            encoding,
+            content_type,
+            picture_kind,
+            descr,
+            data,
+        })
+    }
+}
+
+impl fmt::Debug for Picture {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Picture")
+            .field("encoding", &self.encoding)
+            .field("content_type", &self.content_type)
+            .field("picture_kind", &self.picture_kind)
+            .field("descr", &self.descr)
+            .field("data", &display_to_debug(format!("<{} B>", self.data.len())))
+            .finish()
     }
 }
 

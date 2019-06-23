@@ -193,6 +193,10 @@ impl PartialEq for FrameKey {
                     let o = ob.as_comment().unwrap();
                     v.descr == o.descr && v.lang == o.lang
                 }
+                Picture(v) => {
+                    let o = ob.as_picture().unwrap();
+                    v.descr == o.descr
+                }
                 UserText(v) => v.descr == ob.as_user_text().unwrap().descr,
                 UserUrl(v) => v.descr == ob.as_user_url().unwrap().descr,
                 Url(v) => v == ob.as_url().unwrap(),
@@ -217,6 +221,7 @@ impl Hash for FrameKey {
                 state.write(v.descr.as_bytes());
                 state.write(&v.lang.to_bytes());
             }
+            Picture(v) => state.write(v.descr.as_bytes()),
             UserText(v) => state.write(v.descr.as_bytes()),
             UserUrl(v) => state.write(v.descr.as_bytes()),
             Url(v) => state.write(v.as_bytes()),
@@ -260,7 +265,10 @@ impl Frames {
     pub(crate) fn insert(&mut self, frame: Frame) {
         let key = FrameKey(frame);
         if let Some(i) = self.vec.iter().position(|k| k == &key) {
-            self.vec[i].0.body.merge_from(key.0.body);
+            let id = key.0.id;
+            if let Some(body) = self.vec[i].0.body.merge_from(key.0.body) {
+                self.vec.push(FrameKey(Frame { id, body }));
+            }
         } else {
             self.vec.push(key);
         }
