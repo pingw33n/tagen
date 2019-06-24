@@ -212,73 +212,73 @@ impl Comment {
 pub struct PictureKind(pub u8);
 
 impl PictureKind {
-    pub const OTHER: u8 = 0x00;
+    pub const OTHER: Self = Self(0x00);
 
     /// 32x32 pixels 'file icon' (PNG only)
-    pub const ICON: u8 = 0x01;
+    pub const ICON: Self = Self(0x01);
 
     /// Other file icon
-    pub const OTHER_ICON: u8 = 0x02;
+    pub const OTHER_ICON: Self = Self(0x02);
 
     /// Cover (front)
-    pub const COVER_FRONT: u8 = 0x03;
+    pub const COVER_FRONT: Self = Self(0x03);
 
     /// Cover (back)
-    pub const COVER_BACK: u8 = 0x04;
+    pub const COVER_BACK: Self = Self(0x04);
 
     /// Leaflet page
-    pub const LEAFLET: u8 = 0x05;
+    pub const LEAFLET: Self = Self(0x05);
 
     /// Media (e.g. label side of CD)
-    pub const MEDIA: u8 = 0x06;
+    pub const MEDIA: Self = Self(0x06);
 
     /// Lead artist/lead performer/soloist
-    pub const LEAD_ARTIST: u8 = 0x07;
+    pub const LEAD_ARTIST: Self = Self(0x07);
 
     /// Artist/performer
-    pub const ARTIST: u8 = 0x08;
+    pub const ARTIST: Self = Self(0x08);
 
     /// Conductor
-    pub const CONDUCTOR: u8 = 0x09;
+    pub const CONDUCTOR: Self = Self(0x09);
 
     /// Band/Orchestra
-    pub const BAND: u8 = 0x0A;
+    pub const BAND: Self = Self(0x0A);
 
     /// Composer
-    pub const COMPOSER: u8 = 0x0B;
+    pub const COMPOSER: Self = Self(0x0B);
 
     /// Lyricist/text writer
-    pub const LYRICIST: u8 = 0x0C;
+    pub const LYRICIST: Self = Self(0x0C);
 
     /// Recording Location
-    pub const RECORDING_LOCATION: u8 = 0x0D;
+    pub const RECORDING_LOCATION: Self = Self(0x0D);
 
     /// During recording
-    pub const DURING_RECORDING: u8 = 0x0E;
+    pub const DURING_RECORDING: Self = Self(0x0E);
 
     /// During performance
-    pub const DURING_PERFORMANCE: u8 = 0x0F;
+    pub const DURING_PERFORMANCE: Self = Self(0x0F);
 
     /// Movie/video screen capture
-    pub const SCREEN_CAPTURE: u8 = 0x10;
+    pub const SCREEN_CAPTURE: Self = Self(0x10);
 
     /// A bright coloured fish
-    pub const BRIGHT_FISH: u8 = 0x11;
+    pub const BRIGHT_FISH: Self = Self(0x11);
 
     /// Illustration
-    pub const ILLUSTRATION: u8 = 0x12;
+    pub const ILLUSTRATION: Self = Self(0x12);
 
     /// Band/artist logotype
-    pub const BAND_LOGO: u8 = 0x13;
+    pub const BAND_LOGO: Self = Self(0x13);
 
     /// Publisher/Studio logotype
-    pub const PUBLISHER_LOGOTYPE: u8 = 0x14;
+    pub const PUBLISHER_LOGOTYPE: Self = Self(0x14);
 }
 
 impl fmt::Display for PictureKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         loop {
-            return write!(f, "{}", match self.0 {
+            return write!(f, "{}", match *self {
                 Self::OTHER => "other",
                 Self::ICON => "file icon",
                 Self::OTHER_ICON => "other file icon",
@@ -310,7 +310,7 @@ impl fmt::Display for PictureKind {
 impl fmt::Debug for PictureKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         loop {
-            return write!(f, "{}", match self.0 {
+            return write!(f, "{}", match *self {
                 Self::OTHER => "OTHER",
                 Self::ICON => "ICON",
                 Self::OTHER_ICON => "OTHER_ICON",
