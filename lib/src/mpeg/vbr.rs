@@ -209,42 +209,42 @@ impl Lame {
             Some(track_peak as f64 / 2u32.pow(23) as f64)
         };
 
-        fn read_i8<T: AsRef<[u8]>>(brd: &mut BitReader<T>, bit_count: usize) -> Option<i8> {
+        fn read_i8<T: AsRef<[u8]>>(brd: &mut BitReader<T>, bit_count: usize) -> io::Result<i8> {
             assert!(bit_count > 0);
             let sign = brd.read_u8(1)?;
             let v = brd.read_u8(bit_count - 1)? as i8;
-            Some(if sign == 0 { v } else { -v })
+            Ok(if sign == 0 { v } else { -v })
         }
 
-        fn read_i16<T: AsRef<[u8]>>(brd: &mut BitReader<T>, bit_count: usize) -> Option<i16> {
+        fn read_i16<T: AsRef<[u8]>>(brd: &mut BitReader<T>, bit_count: usize) -> io::Result<i16> {
             assert!(bit_count > 0);
             let sign = brd.read_u8(1)?;
             let v = brd.read_u16(bit_count - 1)? as i16;
-            Some(if sign == 0 { v } else { -v })
+            Ok(if sign == 0 { v } else { -v })
         }
 
-        fn read_i32<T: AsRef<[u8]>>(brd: &mut BitReader<T>, bit_count: usize) -> Option<i32> {
+        fn read_i32<T: AsRef<[u8]>>(brd: &mut BitReader<T>, bit_count: usize) -> io::Result<i32> {
             assert!(bit_count > 0);
             let sign = brd.read_u8(1)?;
             let v = brd.read_u32(bit_count - 1)? as i32;
-            Some(if sign == 0 { v } else { -v })
+            Ok(if sign == 0 { v } else { -v })
         }
 
         fn read_gain<T: AsRef<[u8]>>(brd: &mut BitReader<T>, gain_kind: u8)
-            -> (u8, u8, Option<f64>)
+            -> io::Result<(u8, u8, Option<f64>)>
         {
-            let kind = brd.read_u8(3).unwrap();
-            let origin = brd.read_u8(3).unwrap();
-            let adjustment = read_i32(brd, 10).unwrap();
+            let kind = brd.read_u8(3)?;
+            let origin = brd.read_u8(3)?;
+            let adjustment = read_i32(brd, 10)?;
             let adjustment = if kind == gain_kind {
                 Some(adjustment as f64 / 10.0)
             } else {
                 None
             };
-            (kind, origin, adjustment)
+            Ok((kind, origin, adjustment))
         }
-        let (_track_gain_kind, track_gain_origin, track_gain_adjustment) = read_gain(brd, 1);
-        let (_album_gain_kind, album_gain_origin, album_gain_adjustment) = read_gain(brd, 2);
+        let (_track_gain_kind, track_gain_origin, track_gain_adjustment) = read_gain(brd, 1).unwrap();
+        let (_album_gain_kind, album_gain_origin, album_gain_adjustment) = read_gain(brd, 2).unwrap();
 
         let encoding_flags = brd.read_u8(4).unwrap();
         let ath = brd.read_u8(4).unwrap();
@@ -260,7 +260,7 @@ impl Lame {
         let noise_shaping = brd.read_u8(2).unwrap();
 
         let mp3_gain = read_i8(brd, 8).unwrap();
-        let _ = brd.read_u8(2).unwrap();
+        let _ = brd.read_u8(2);
 
         let surround_info = brd.read_u8(3).unwrap();
         let preset_used = brd.read_u16(11).unwrap();
