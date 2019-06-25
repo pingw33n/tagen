@@ -82,7 +82,7 @@ impl Encoding {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Frame {
     pub id: FrameId,
     pub body: Body,
@@ -179,7 +179,7 @@ impl Frame {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq)]
 struct FrameKey(Frame);
 
 impl PartialEq for FrameKey {
@@ -209,8 +209,6 @@ impl PartialEq for FrameKey {
     }
 }
 
-impl Eq for FrameKey {}
-
 impl Hash for FrameKey {
     fn hash<H: Hasher>(&self, state: &mut H) {
         use Body::*;
@@ -234,7 +232,7 @@ impl Hash for FrameKey {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Frames {
     vec: Vec<FrameKey>,
 }

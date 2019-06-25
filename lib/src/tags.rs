@@ -2,10 +2,11 @@ use std::borrow::Cow;
 
 use crate::timestamp::Timestamp;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TagsRef<'a> {
     pub id3v1: Option<&'a crate::id3::v1::Tag>,
     pub id3v2: Option<&'a crate::id3::v2::Tag>,
+    pub vcomment: Option<&'a crate::vcomment::Tag>,
 }
 
 impl<'a> TagsRef<'a> {

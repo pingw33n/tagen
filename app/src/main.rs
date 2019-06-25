@@ -81,6 +81,9 @@ fn print_file(filename: &str) -> Result<()> {
     if let Some(v) = tags.id3v2 {
         avail_tags.push(format!("ID3v{}", v.header().version));
     }
+    if tags.vcomment.is_some() {
+        avail_tags.push("Vorbis Comment".into());
+    }
     print_line("Available", avail_tags.join(", "));
 
     print_opt_line("Title", tags.title());
@@ -90,6 +93,7 @@ fn print_file(filename: &str) -> Result<()> {
     print_opt_line("Date", tags.date());
 
     match format {
+        FormatRef::Flac(v) => {},
         FormatRef::Mpeg(v) => print_mpeg(&v),
         FormatRef::__Nonexhaustive => unreachable!(),
     }

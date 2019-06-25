@@ -13,7 +13,7 @@ use super::unsynch;
 
 pub(crate) const HEADER_LEN: usize = 10;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Header {
     pub version: Version,
     pub unsynch: bool,
@@ -97,7 +97,7 @@ impl Header {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Tag {
     header: Header,
     frames: Frames,

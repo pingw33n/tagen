@@ -339,6 +339,7 @@ impl Mpeg {
         TagsRef {
             id3v1: self.id3v1.as_ref(),
             id3v2: self.id3v2.as_ref(),
+            .. Default::default()
         }
     }
 
