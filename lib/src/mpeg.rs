@@ -285,7 +285,13 @@ impl Mpeg {
 
             rd.seek(SeekFrom::Start(pos))?;
             match Header::read(&mut rd) {
-                Ok(h) => break (h, pos),
+                Ok(h) => {
+                    // Verify the next frame is valid.
+                    rd.seek(SeekFrom::Start(pos + h.frame_len_bytes() as u64))?;
+                    if Header::read(&mut rd).into_opt()?.is_some() {
+                        break (h, pos);
+                    }
+                },
                 Err(e) => if e.kind() != io::ErrorKind::InvalidData {
                     return Err(e);
                 }
@@ -294,7 +300,6 @@ impl Mpeg {
             pos += 1;
             rd.seek(SeekFrom::Start(pos))?;
         };
-
 
         let id3v1 = id3::v1::Tag::read(&mut rd).into_opt()?;
 
