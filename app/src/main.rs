@@ -63,11 +63,11 @@ fn print_file(filename: &str) -> Result<()> {
     println!("Audio");
     print_sep_line();
     print_line("Format", &format);
-    print_line("Duration", format_duration(meta.duration()));
+    print_opt_line("Duration", meta.duration().map(|v| format_duration(v)));
     print_line("Channels", meta.channel_count());
     print_line("Sample Rate", WithUnit::new(meta.samples_per_sec() as f64 / 1000.0, "kHz"));
     print_opt_line("Sample Size", meta.bits_per_sample());
-    print_line("Bitrate", WithUnit::new(meta.bits_per_sec() as f64 / 1000.0, "kb/s"));
+    print_opt_line("Bitrate", meta.bits_per_sec().map(|v| WithUnit::new(v as f64 / 1000.0, "kb/s")));
 
     println!();
     println!("General tags");

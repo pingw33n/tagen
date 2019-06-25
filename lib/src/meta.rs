@@ -77,10 +77,10 @@ impl Meta {
         self.format.to_ref()
     }
 
-    pub fn duration(&self) -> Duration {
+    pub fn duration(&self) -> Option<Duration> {
         use Format::*;
         match &self.format {
-            Mpeg(v) => v.duration(),
+            Mpeg(v) => Some(v.duration()),
         }
     }
 
@@ -98,10 +98,10 @@ impl Meta {
         }
     }
 
-    pub fn bits_per_sec(&self) -> u32 {
+    pub fn bits_per_sec(&self) -> Option<u32> {
         use Format::*;
         match &self.format {
-            Mpeg(v) => v.bits_per_sec() as u32,
+            Mpeg(v) => Some(v.bits_per_sec() as u32),
         }
     }
 
