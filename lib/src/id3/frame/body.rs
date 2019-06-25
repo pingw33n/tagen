@@ -63,13 +63,13 @@ impl Body {
                 }
                 let o = o.into_comment().unwrap();
                 debug_assert_eq!(v.lang, o.lang);
-                debug_assert_eq!(v.descr, o.descr);
+                debug_assert_eq!(v.description, o.description);
                 v.text.push_str(&o.text);
             }
             Picture(v) => {
                 let mut o = o.into_picture().unwrap();
-                debug_assert_eq!(v.descr, o.descr);
-                o.descr.push(' ');
+                debug_assert_eq!(v.description, o.description);
+                o.description.push(' ');
                 return Some(Picture(o));
             }
             Text(v) => {
@@ -80,13 +80,13 @@ impl Body {
             UniqueFileId(v) => *v = o.into_unique_file_id().unwrap(),
             UserText(v) => {
                 let o = o.into_user_text().unwrap();
-                debug_assert_eq!(v.descr, o.descr);
+                debug_assert_eq!(v.description, o.description);
                 v.encoding = v.encoding.common(o.encoding);
                 v.values.extend(o.values);
             },
             UserUrl(v) => {
                 let o = o.into_user_url().unwrap();
-                debug_assert_eq!(v.descr, o.descr);
+                debug_assert_eq!(v.description, o.description);
                 *v = o;
             }
             Url(v) => *v = o.into_url().unwrap(),
@@ -156,7 +156,7 @@ impl Text {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UserText {
     pub encoding: Encoding,
-    pub descr: String,
+    pub description: String,
     pub values: Vec<String>,
 }
 
@@ -164,12 +164,12 @@ impl UserText {
     fn decode(buf: &[u8]) -> Result<Self> {
         let encoding = Encoding::from_u8(buf[0])?;
         let decoder = Decoder::new(encoding);
-        let (descr, buf) = decoder.decode_null_terminated(&buf[1..])?;
+        let (description, buf) = decoder.decode_null_terminated(&buf[1..])?;
         let values = decoder.decode_null_delimited(buf)?;
 
         Ok(Self {
             encoding,
-            descr,
+            description,
             values,
         })
     }
@@ -185,7 +185,7 @@ pub struct UniqueFileId {
 pub struct Comment {
     pub encoding: Encoding,
     pub lang: Language,
-    pub descr: String,
+    pub description: String,
     pub text: String,
 }
 
@@ -197,12 +197,12 @@ impl Comment {
         let encoding = Encoding::from_u8(buf[0])?;
         let decoder = Decoder::new(encoding);
         let lang = Language::new([buf[1], buf[2], buf[3]]);
-        let (descr, buf) = decoder.decode_null_terminated(&buf[4..])?;
+        let (description, buf) = decoder.decode_null_terminated(&buf[4..])?;
         let text = decoder.decode_null_stripped(buf)?;
         Ok(Self {
             encoding,
             lang,
-            descr,
+            description,
             text,
         })
     }
@@ -350,7 +350,7 @@ pub struct Picture {
     pub encoding: Encoding,
     pub content_type: String,
     pub picture_kind: PictureKind,
-    pub descr: String,
+    pub description: String,
     pub data: Vec<u8>,
 }
 
@@ -366,13 +366,13 @@ impl Picture {
             return Err(Error("frame truncated"));
         }
         let picture_kind = buf[0].into();
-        let (descr, buf) = decoder.decode_null_terminated(&buf[1..])?;
+        let (description, buf) = decoder.decode_null_terminated(&buf[1..])?;
         let data = buf.into();
         Ok(Self {
             encoding,
             content_type,
             picture_kind,
-            descr,
+            description,
             data,
         })
     }
@@ -397,14 +397,14 @@ impl Picture {
         };
 
         let picture_kind = buf[4].into();
-        let (descr, buf) = decoder.decode_null_terminated(&buf[5..])?;
+        let (description, buf) = decoder.decode_null_terminated(&buf[5..])?;
         let data = buf.into();
 
         Ok(Self {
             encoding,
             content_type,
             picture_kind,
-            descr,
+            description,
             data,
         })
     }
@@ -416,7 +416,7 @@ impl fmt::Debug for Picture {
             .field("encoding", &self.encoding)
             .field("content_type", &self.content_type)
             .field("picture_kind", &self.picture_kind)
-            .field("descr", &self.descr)
+            .field("description", &self.description)
             .field("data", &display_to_debug(format!("<{} B>", self.data.len())))
             .finish()
     }
@@ -425,7 +425,7 @@ impl fmt::Debug for Picture {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct UserUrl {
     pub encoding: Encoding,
-    pub descr: String,
+    pub description: String,
     pub url: String,
 }
 
@@ -433,12 +433,12 @@ impl UserUrl {
     fn decode(buf: &[u8]) -> Result<Self> {
         let encoding = Encoding::from_u8(buf[0])?;
         let decoder = Decoder::new(encoding);
-        let (descr, buf) = decoder.decode_null_terminated(&buf[1..])?;
+        let (description, buf) = decoder.decode_null_terminated(&buf[1..])?;
         let url = decoder.decode_null_stripped(buf)?;
 
         Ok(Self {
             encoding,
-            descr,
+            description,
             url,
         })
     }

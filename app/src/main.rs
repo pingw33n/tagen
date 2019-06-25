@@ -142,7 +142,7 @@ fn print_mpeg(mpeg: &Mpeg) {
         print_opt_line("Release Date", v.release_date());
 
         for p in v.pictures() {
-            print_line(&format!("Picture [{}]", p.descr),
+            print_line(&format!("Picture [{}]", p.description),
                 format_args!("{}, {}, {}",
                     p.picture_kind,
                     p.content_type,

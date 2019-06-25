@@ -191,14 +191,14 @@ impl PartialEq for FrameKey {
             match &self.0.body {
                 Comment(v) => {
                     let o = ob.as_comment().unwrap();
-                    v.descr == o.descr && v.lang == o.lang
+                    v.description == o.description && v.lang == o.lang
                 }
                 Picture(v) => {
                     let o = ob.as_picture().unwrap();
-                    v.descr == o.descr
+                    v.description == o.description
                 }
-                UserText(v) => v.descr == ob.as_user_text().unwrap().descr,
-                UserUrl(v) => v.descr == ob.as_user_url().unwrap().descr,
+                UserText(v) => v.description == ob.as_user_text().unwrap().description,
+                UserUrl(v) => v.description == ob.as_user_url().unwrap().description,
                 Url(v) => v == ob.as_url().unwrap(),
                 | Bytes(_)
                 | Text(_)
@@ -216,12 +216,12 @@ impl Hash for FrameKey {
         state.write(&self.0.id.to_bytes());
         match &self.0.body {
             Comment(v) => {
-                state.write(v.descr.as_bytes());
+                state.write(v.description.as_bytes());
                 state.write(&v.lang.to_bytes());
             }
-            Picture(v) => state.write(v.descr.as_bytes()),
-            UserText(v) => state.write(v.descr.as_bytes()),
-            UserUrl(v) => state.write(v.descr.as_bytes()),
+            Picture(v) => state.write(v.description.as_bytes()),
+            UserText(v) => state.write(v.description.as_bytes()),
+            UserUrl(v) => state.write(v.description.as_bytes()),
             Url(v) => state.write(v.as_bytes()),
             | Bytes(_)
             | Text(_)
