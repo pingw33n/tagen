@@ -159,8 +159,11 @@ impl Header {
             0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160];
         let bitrate =
             hdr_bytes.get_bits(12..16) as usize;
+        match bitrate {
+            0 | 0b1111 => return Err(Error("bad bitrate").into_invalid_data_err()),
+            _ => {}
+        }
         let kbits_per_sec = match version {
-            _ if bitrate == 0b1111 => return Err(Error("bad bitrate").into_invalid_data_err()),
             Version::V1 => match layer {
                 Layer::L1 => BIRATE_V1_L1[bitrate],
                 Layer::L2 => BIRATE_V1_L2[bitrate],
