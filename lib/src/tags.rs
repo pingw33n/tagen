@@ -1,12 +1,15 @@
 use std::borrow::Cow;
 
+use crate::id3::v1::Id3v1;
+use crate::id3::v2::Id3v2;
 use crate::timestamp::Timestamp;
+use crate::vcomment::Vcomment;
 
 #[derive(Debug, Default)]
 pub struct TagsRef<'a> {
-    pub id3v1: Option<&'a crate::id3::v1::Tag>,
-    pub id3v2: Option<&'a crate::id3::v2::Tag>,
-    pub vcomment: Option<&'a crate::vcomment::Tag>,
+    pub id3v1: Option<&'a Id3v1>,
+    pub id3v2: Option<&'a Id3v2>,
+    pub vcomment: Option<&'a Vcomment>,
 }
 
 impl<'a> TagsRef<'a> {
@@ -44,12 +47,12 @@ impl<'a> TagsRef<'a> {
         self.choose(|v| v.date(), |v| v.release_date())
     }
 
-    fn choose<T, Id3v1, Id3v2>(&self,
-        id3v1: Id3v1,
-        id3v2: Id3v2,
+    fn choose<T, TId3v1, TId3v2>(&self,
+        id3v1: TId3v1,
+        id3v2: TId3v2,
     ) -> Option<T>
-        where Id3v1: FnOnce(&'a crate::id3::v1::Tag) -> Option<T>,
-              Id3v2: FnOnce(&'a crate::id3::v2::Tag) -> Option<T>,
+        where TId3v1: FnOnce(&'a Id3v1) -> Option<T>,
+              TId3v2: FnOnce(&'a Id3v2) -> Option<T>,
     {
         if let Some(v) = self.id3v2 {
             id3v2(v)

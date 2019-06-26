@@ -98,12 +98,12 @@ impl Header {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Tag {
+pub struct Id3v2 {
     header: Header,
     frames: Frames,
 }
 
-impl Tag {
+impl Id3v2 {
     pub fn header(&self) -> &Header {
         &self.header
     }

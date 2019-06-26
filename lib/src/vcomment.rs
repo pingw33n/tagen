@@ -7,12 +7,12 @@ use crate::error::*;
 use crate::util::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Tag {
+pub struct Vcomment {
     vendor: String,
     entries: Vec<(String, String)>,
 }
 
-impl Tag {
+impl Vcomment {
     pub fn vendor(&self) -> &str {
         &self.vendor
     }

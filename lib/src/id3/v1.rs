@@ -635,7 +635,7 @@ pub fn genre_str(genre: u8) -> Option<&'static str> {
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct Tag {
+pub struct Id3v1 {
     pub title: String,
     pub artist: String,
     pub album: String,
@@ -643,10 +643,10 @@ pub struct Tag {
     pub comment: String,
     pub track: Option<u8>,
     pub genre: Option<Genre>,
-    pub ext: Option<ExtTag>,
+    pub ext: Option<Ext>,
 }
 
-impl Tag {
+impl Id3v1 {
     pub fn best_title(&self) -> &str {
         self.ext.as_ref().map(|e| &e.title).unwrap_or(&self.title)
     }
@@ -706,7 +706,7 @@ impl Tag {
             if buf.len() < LEN + EXT_LEN || &buf[EXT_LEN..EXT_LEN + 3] != b"TAG" {
                 return Err(Error("couldn't find ID3v1 magic"));
             }
-            Some(ExtTag::decode(buf))
+            Some(Ext::decode(buf))
         } else {
             None
         };
@@ -720,7 +720,7 @@ impl Tag {
         Ok(Self::decode0(buf, ext))
     }
 
-    fn decode0(buf: &[u8], ext: Option<ExtTag>) -> Self {
+    fn decode0(buf: &[u8], ext: Option<Ext>) -> Self {
         let title = decode_str(&buf[3..33]);
         let artist = decode_str(&buf[33..63]);
         let album = decode_str(&buf[63..93]);
@@ -748,7 +748,7 @@ impl Tag {
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct ExtTag {
+pub struct Ext {
     pub title: String,
     pub artist: String,
     pub album: String,
@@ -758,7 +758,7 @@ pub struct ExtTag {
     pub end_time: String,
 }
 
-impl ExtTag {
+impl Ext {
     fn decode(buf: &[u8]) -> Self {
         let title = decode_str(&buf[4..64]);
         let artist = decode_str(&buf[64..124]);

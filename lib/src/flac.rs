@@ -3,16 +3,20 @@ use byteorder::{BE, ByteOrder, ReadBytesExt};
 use encoding::{Encoding, DecoderTrap};
 use encoding::all::{ISO_8859_1, UTF_8};
 use std::cmp;
+use std::convert::TryInto;
 use std::io::{self, SeekFrom};
 use std::io::prelude::*;
-use std::fmt;
 
+use std::time::Duration;
+use std::fmt;
 use crate::error::*;
 use crate::util::*;
-pub use crate::id3::frame::body::PictureKind;
-use std::time::Duration;
+use crate::id3::v1::Id3v1;
+use crate::id3::v2::Id3v2;
 use crate::tags::TagsRef;
-use std::convert::TryInto;
+use crate::vcomment::Vcomment;
+
+pub use crate::id3::frame::body::PictureKind;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StreamInfo {
@@ -365,9 +369,9 @@ pub struct Flac {
     audio_len_bytes: u64,
     cue_sheet: Option<CueSheet>,
     pictures: Vec<Picture>,
-    id3v1: Option<crate::id3::v1::Tag>,
-    id3v2: Option<crate::id3::v2::Tag>,
-    vcomment: Option<crate::vcomment::Tag>,
+    id3v1: Option<Id3v1>,
+    id3v2: Option<Id3v2>,
+    vcomment: Option<Vcomment>,
 }
 
 impl Flac {
@@ -412,7 +416,7 @@ impl Flac {
     pub fn read(mut rd: impl Read + Seek) -> io::Result<Self> {
         let limit = rd.seek(SeekFrom::End(0))?;
 
-        let id3v1 = crate::id3::v1::Tag::read(&mut rd).into_opt()?;
+        let id3v1 = crate::id3::v1::Id3v1::read(&mut rd).into_opt()?;
 
         let mut stream_info = None;
         let mut id3v2 = None;
@@ -431,7 +435,7 @@ impl Flac {
                 }
             } else if id3v2.is_none() {
                 rd.seek(SeekFrom::Start(pos))?;
-                if let Some((id3_, id3_len)) = crate::id3::v2::Tag::read(&mut rd, Some(limit - pos)).into_opt()? {
+                if let Some((id3_, id3_len)) = crate::id3::v2::Id3v2::read(&mut rd, Some(limit - pos)).into_opt()? {
                     id3v2 = Some(id3_);
                     pos += id3_len as u64;
                     continue;
@@ -464,7 +468,7 @@ impl Flac {
                         true
                     }
                     BlockKind::VORBIS_COMMENT if vcomment.is_none() => {
-                        vcomment = Some(crate::vcomment::Tag::read_limited(&mut rd, false)?);
+                        vcomment = Some(crate::vcomment::Vcomment::read_limited(&mut rd, false)?);
                         true
                     }
                     _ => false,

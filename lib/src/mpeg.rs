@@ -9,9 +9,10 @@ use std::io::prelude::*;
 use std::io::{self, SeekFrom};
 use std::time::Duration;
 
+use crate::id3::v1::Id3v1;
+use crate::id3::v2::Id3v2;
 use crate::error::*;
 use crate::util::*;
-use super::id3;
 pub use vbr::*;
 use crate::tags::TagsRef;
 
@@ -251,8 +252,8 @@ impl Header {
 pub struct Mpeg {
     header: Header,
     vbr: Option<Vbr>,
-    id3v1: Option<id3::v1::Tag>,
-    id3v2: Option<id3::v2::Tag>,
+    id3v1: Option<Id3v1>,
+    id3v2: Option<Id3v2>,
     duration: Duration,
     bits_per_sec: u32,
 }
@@ -271,7 +272,7 @@ impl Mpeg {
             }
 
             if !id3v2_done {
-                match id3::v2::Tag::read(&mut rd, Some(file_len - pos)) {
+                match Id3v2::read(&mut rd, Some(file_len - pos)) {
                     Ok((tag, tag_len_bytes)) => {
                         pos += tag_len_bytes as u64;
                         id3v2 = Some(tag);
@@ -304,7 +305,7 @@ impl Mpeg {
             rd.seek(SeekFrom::Start(pos))?;
         };
 
-        let id3v1 = id3::v1::Tag::read(&mut rd).into_opt()?;
+        let id3v1 = Id3v1::read(&mut rd).into_opt()?;
 
         let vbr = if header.layer == Layer::L3 {
             let pos = header_pos + Vbr::offset(&header);
@@ -352,7 +353,7 @@ impl Mpeg {
     }
 
     fn compute_duration_and_bitrate(header: &Header, header_pos: u64, file_len: u64,
-        vbr: Option<&Vbr>, id3v1: Option<&id3::v1::Tag>) -> (Duration, u32)
+        vbr: Option<&Vbr>, id3v1: Option<&Id3v1>) -> (Duration, u32)
     {
         if_chain! {
             if let Some(vbr) = &vbr;
