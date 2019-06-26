@@ -13,6 +13,7 @@ use std::io::{self, Cursor, Result};
 
 use tagen::mpeg::{Mpeg, Vbr};
 use tagen::meta::*;
+use std::time::Duration;
 
 struct WithUnit<V, U> {
     v: V,
@@ -32,6 +33,10 @@ impl<V: fmt::Display, U: fmt::Display> fmt::Display for WithUnit<V, U> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} {}", self.v, self.unit)
     }
+}
+
+fn format_duration_ms(d: Duration) -> impl fmt::Display {
+    format_duration(Duration::from_millis((d.as_nanos() / 1_000_000) as u64))
 }
 
 fn print_line(name: &str, v: impl fmt::Display) {
@@ -63,7 +68,7 @@ fn print_file(filename: &str) -> Result<()> {
     println!("Audio");
     print_sep_line();
     print_line("Format", &format);
-    print_opt_line("Duration", meta.duration().map(|v| format_duration(v)));
+    print_opt_line("Duration", meta.duration().map(|v| format_duration_ms(v)));
     print_line("Channels", meta.channel_count());
     print_line("Sample Rate", WithUnit::new(meta.samples_per_sec() as f64 / 1000.0, "kHz"));
     print_opt_line("Sample Size", meta.bits_per_sample());
