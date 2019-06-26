@@ -379,8 +379,8 @@ impl Flac {
 
     pub fn duration(&self) -> Option<Duration> {
         if let Some(l) = self.stream_info.len_samples {
-            let micros = l as f64 / self.stream_info.samples_per_sec as f64 * 1_000_0000.0;
-            Some(Duration::from_micros(micros as u64))
+            let nanos = l as u64 * 1_000_000_000 / self.stream_info.samples_per_sec as u64;
+            Some(Duration::from_nanos(nanos))
         } else {
             None
         }
@@ -388,7 +388,7 @@ impl Flac {
 
     pub fn bits_per_sec(&self) -> Option<u32> {
         if let Some(d) = self.duration() {
-            let r = self.audio_len_bytes as f64 * 8.0 / d.as_micros() as f64 / 1_000_0000.0;
+            let r = self.audio_len_bytes as u128 * 8 * 1_000_000_000 / d.as_nanos();
             Some(r as u32)
         } else {
             None
