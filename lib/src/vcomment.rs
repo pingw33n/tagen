@@ -4,6 +4,7 @@ use std::io;
 use std::io::prelude::*;
 
 use crate::error::*;
+use crate::timestamp::Timestamp;
 use crate::util::*;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -25,6 +26,26 @@ impl Vcomment {
         self.entries()
             .filter(move |(k, _)| k.eq_ignore_ascii_case(key))
             .map(|(_, v)| v)
+    }
+
+    pub fn title(&self) -> Option<&str> {
+        self.get("TITLE").next()
+    }
+
+    pub fn artist(&self) -> Option<&str> {
+        self.get("ARTIST").next()
+    }
+
+    pub fn album(&self) -> Option<&str> {
+        self.get("ALBUM").next()
+    }
+
+    pub fn genre(&self) -> Option<&str> {
+        self.get("GENRE").next()
+    }
+
+    pub fn date(&self) -> Option<Timestamp> {
+        self.get("DATE").next().and_then(|s| s.parse().ok())
     }
 
     pub(crate) fn read_limited<T: Read>(rd: &mut Limited<T>, framing: bool) -> io::Result<Self> {

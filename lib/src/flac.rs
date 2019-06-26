@@ -322,10 +322,8 @@ impl BlockHeader {
             return Err(Error("bad block kind").into_invalid_data_err());
         }
         let kind = BlockKind(kind);
-        dbg!(kind);
 
         let len = BE::read_u32(&[0, buf[1], buf[2], buf[3]]);
-        dbg!(len);
 
         Ok(Self {
             last,
